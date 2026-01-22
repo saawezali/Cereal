@@ -20,10 +20,10 @@ class Fun(commands.Cog):
         if self.session:
             await self.session.close()
     
-    @commands.hybrid_command(name='meme', description='Get a random meme from Reddit')
-    async def meme(self, ctx: commands.Context):
+    @app_commands.command(name='meme', description='Get a random meme from Reddit')
+    async def meme(self, interaction: discord.Interaction):
         """Get a random meme from Reddit"""
-        subreddits = ['memes', 'dankmemes', 'me_irl', 'wholesomememes', 'funny']
+        subreddits = ['darkjokes', 'shitpost','dankmemes', 'me_irl', 'funny','shitposting']
         
         # Try multiple times to get a valid image meme
         for attempt in range(5):
@@ -60,16 +60,16 @@ class Fun(commands.Cog):
                     embed.set_image(url=post['url'])
                     embed.set_footer(text=f"👍 {post['ups']} | r/{subreddit}")
                     
-                    return await ctx.send(embed=embed)
+                    return await interaction.response.send_message(embed=embed)
                     
             except Exception as e:
                 print(f"Meme error attempt {attempt + 1}: {e}")
                 continue
         
-        await ctx.send("❌ Couldn't fetch a meme right now. Try again!")
+        await interaction.response.send_message("❌ Couldn't fetch a meme right now. Try again!", ephemeral=True)
     
-    @commands.hybrid_command(name='dadjoke', description='Get a random dad joke')
-    async def dad_joke(self, ctx: commands.Context):
+    @app_commands.command(name='dadjoke', description='Get a random dad joke')
+    async def dad_joke(self, interaction: discord.Interaction):
         """Get a random dad joke"""
         async with self.session.get('https://icanhazdadjoke.com/',
                                    headers={'Accept': 'application/json'}) as resp:
@@ -80,12 +80,12 @@ class Fun(commands.Cog):
                     description=data['joke'],
                     color=discord.Color.blue()
                 )
-                await ctx.send(embed=embed)
+                await interaction.response.send_message(embed=embed)
             else:
-                await ctx.send("❌ Couldn't fetch a joke right now!")
+                await interaction.response.send_message("❌ Couldn't fetch a joke right now!", ephemeral=True)
     
-    @commands.hybrid_command(name='fact', description='Get a random fact')
-    async def random_fact(self, ctx: commands.Context):
+    @app_commands.command(name='fact', description='Get a random fact')
+    async def random_fact(self, interaction: discord.Interaction):
         """Get a random fact"""
         async with self.session.get('https://uselessfacts.jsph.pl/random.json?language=en') as resp:
             if resp.status == 200:
@@ -95,62 +95,117 @@ class Fun(commands.Cog):
                     description=data['text'],
                     color=discord.Color.green()
                 )
-                await ctx.send(embed=embed)
+                await interaction.response.send_message(embed=embed)
             else:
-                await ctx.send("❌ Couldn't fetch a fact right now!")
+                await interaction.response.send_message("❌ Couldn't fetch a fact right now!", ephemeral=True)
     
-    @commands.hybrid_command(name='roast', description='Roast someone (or yourself)')
+    @app_commands.command(name='roast', description='Roast someone (or yourself)')
     @app_commands.describe(member='The member to roast (optional)')
-    async def roast(self, ctx: commands.Context, member: discord.Member = None):
+    async def roast(self, interaction: discord.Interaction, member: discord.Member = None):
         """Roast someone (or yourself)"""
-        target = member or ctx.author
+        target = member or interaction.user
         
-        roasts = [
-            f"{target.mention}, I'd explain it to you but I left my crayons at home.",
-            f"{target.mention}, you're like a cloud. When you disappear, it's a beautiful day.",
-            f"{target.mention}, if brains were dynamite, you wouldn't have enough to blow your nose.",
-            f"{target.mention}, you bring everyone so much joy... when you leave the room.",
-            f"{target.mention}, I'd agree with you but then we'd both be wrong.",
-            f"{target.mention}, you're proof that evolution can go in reverse.",
-            f"{target.mention}, somewhere out there is a tree tirelessly producing oxygen for you. Go apologize to it.",
-        ]
+        try:
+            async with self.session.get('https://evilinsult.com/generate_insult.php?lang=en&type=json') as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    roast_text = data['insult']
+                else:
+                    # Fallback to hardcoded roasts
+                    roasts = [
+                        f"{target.mention}, I'd explain it to you but I left my crayons at home.",
+                        f"{target.mention}, you're like a cloud. When you disappear, it's a beautiful day.",
+                        f"{target.mention}, if brains were dynamite, you wouldn't have enough to blow your nose.",
+                        f"{target.mention}, you bring everyone so much joy... when you leave the room.",
+                        f"{target.mention}, I'd agree with you but then we'd both be wrong.",
+                        f"{target.mention}, you're proof that evolution can go in reverse.",
+                        f"{target.mention}, somewhere out there is a tree tirelessly producing oxygen for you. Go apologize to it.",
+                    ]
+                    roast_text = random.choice(roasts)
+        except:
+            # Fallback if API fails
+            roasts = [
+                f"{target.mention}, I'd explain it to you but I left my crayons at home.",
+                f"{target.mention}, you're like a cloud. When you disappear, it's a beautiful day.",
+                f"{target.mention}, if brains were dynamite, you wouldn't have enough to blow your nose.",
+                f"{target.mention}, you bring everyone so much joy... when you leave the room.",
+                f"{target.mention}, I'd agree with you but then we'd both be wrong.",
+                f"{target.mention}, you're proof that evolution can go in reverse.",
+                f"{target.mention}, somewhere out there is a tree tirelessly producing oxygen for you. Go apologize to it.",
+            ]
+            roast_text = random.choice(roasts)
         
         embed = discord.Embed(
             title="🔥 Roasted!",
-            description=random.choice(roasts),
+            description=f"{target.mention}, {roast_text}",
             color=discord.Color.orange()
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='compliment', description='Give someone a compliment')
+    @app_commands.command(name='compliment', description='Give someone a compliment')
     @app_commands.describe(member='The member to compliment (optional)')
-    async def compliment(self, ctx: commands.Context, member: discord.Member = None):
+    async def compliment(self, interaction: discord.Interaction, member: discord.Member = None):
         """Give someone a compliment"""
-        target = member or ctx.author
+        target = member or interaction.user
         
+        # Use reliable hardcoded compliments
         compliments = [
-            f"{target.mention}, you're more helpful than you realize!",
-            f"{target.mention}, you have the best laugh!",
-            f"{target.mention}, you're a great listener!",
-            f"{target.mention}, you light up the room!",
-            f"{target.mention}, you're awesome and you know it!",
-            f"{target.mention}, you're even better than a unicorn, because you're real!",
-            f"{target.mention}, you're a gift to those around you!",
+            f"you're more helpful than you realize!",
+            f"you have the best laugh!",
+            f"you're a great listener!",
+            f"you light up the room!",
+            f"you're awesome and you know it!",
+            f"you're even better than a unicorn, because you're real!",
+            f"you're a gift to those around you!",
+            f"your smile could light up the darkest room!",
+            f"you're incredibly talented and creative!",
+            f"you make the world a better place just by being in it!",
+            f"you're stronger than you know!",
+            f"your kindness is contagious!",
+            f"you're one of a kind and that's amazing!",
+            f"you inspire others without even trying!",
+            f"you're brilliant and capable!",
         ]
+        
+        compliment_text = random.choice(compliments)
         
         embed = discord.Embed(
             title="💝 Compliment",
-            description=random.choice(compliments),
+            description=f"{target.mention}, {compliment_text}",
             color=discord.Color.pink()
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='ship', description='Ship two members together')
+    @app_commands.command(name='quote', description='Get an inspirational quote')
+    async def quote(self, interaction: discord.Interaction):
+        """Get an inspirational quote"""
+        try:
+            async with self.session.get('https://zenquotes.io/api/random') as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    if data and len(data) > 0:
+                        quote_text = data[0]['q']
+                        author = data[0]['a']
+                        
+                        embed = discord.Embed(
+                            title="✍️...",
+                            description=f'\n\n"{quote_text}"\n\n— {author}',
+                            color=discord.Color.blue()
+                        )
+                        await interaction.response.send_message(embed=embed)
+                    else:
+                        await interaction.response.send_message("❌ Couldn't fetch a quote right now!", ephemeral=True)
+                else:
+                    await interaction.response.send_message("❌ Couldn't fetch a quote right now!", ephemeral=True)
+        except:
+            await interaction.response.send_message("❌ Couldn't fetch a quote right now!", ephemeral=True)
+    
+    @app_commands.command(name='ship', description='Ship two members together')
     @app_commands.describe(member1='First member', member2='Second member (optional)')
-    async def ship(self, ctx: commands.Context, member1: discord.Member, member2: discord.Member = None):
+    async def ship(self, interaction: discord.Interaction, member1: discord.Member, member2: discord.Member = None):
         """Ship two members together"""
         if not member2:
-            member2 = ctx.author
+            member2 = interaction.user
         
         # Calculate ship percentage based on user IDs for consistency
         ship_percentage = (member1.id + member2.id) % 101
@@ -182,13 +237,13 @@ class Fun(commands.Cog):
         embed.add_field(name="Love Percentage", value=f"{ship_percentage}%")
         embed.add_field(name="Status", value=status)
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='avatar', aliases=['av', 'pfp'], description="Get someone's avatar")
+    @app_commands.command(name='avatar', description="Get someone's avatar")
     @app_commands.describe(member='The member whose avatar to get (optional)')
-    async def avatar(self, ctx: commands.Context, member: discord.Member = None):
+    async def avatar(self, interaction: discord.Interaction, member: discord.Member = None):
         """Get someone's avatar"""
-        member = member or ctx.author
+        member = member or interaction.user
         
         embed = discord.Embed(
             title=f"{member.display_name}'s Avatar",
@@ -196,20 +251,20 @@ class Fun(commands.Cog):
         )
         embed.set_image(url=member.display_avatar.url)
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='userinfo', aliases=['ui', 'whois'], description='Get information about a user')
+    @app_commands.command(name='userinfo', description='Get information about a user')
     @app_commands.describe(member='The member to get info about (optional)')
-    async def user_info(self, ctx: commands.Context, member: discord.Member = None):
+    async def user_info(self, interaction: discord.Interaction, member: discord.Member = None):
         """Get information about a user"""
-        member = member or ctx.author
+        member = member or interaction.user
         
         roles = [role.mention for role in member.roles[1:]]  # Exclude @everyone
         
         embed = discord.Embed(
             title=f"User Info - {member}",
             color=member.color,
-            timestamp=ctx.message.created_at
+            timestamp=interaction.created_at
         )
         embed.set_thumbnail(url=member.display_avatar.url)
         
@@ -236,17 +291,17 @@ class Fun(commands.Cog):
                 inline=False
             )
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='serverinfo', aliases=['si'], description='Get information about the server')
-    async def server_info(self, ctx: commands.Context):
+    @app_commands.command(name='serverinfo', description='Get information about the server')
+    async def server_info(self, interaction: discord.Interaction):
         """Get information about the server"""
-        guild = ctx.guild
+        guild = interaction.guild
         
         embed = discord.Embed(
             title=f"{guild.name}",
             color=discord.Color.blue(),
-            timestamp=ctx.message.created_at
+            timestamp=interaction.created_at
         )
         
         if guild.icon:
@@ -267,7 +322,7 @@ class Fun(commands.Cog):
         embed.add_field(name="Boost Level", value=guild.premium_tier, inline=True)
         embed.add_field(name="Boosts", value=guild.premium_subscription_count, inline=True)
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Fun(bot))

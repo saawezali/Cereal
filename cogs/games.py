@@ -52,48 +52,20 @@ class Games(commands.Cog):
             "Never have I ever sent a text to the wrong person",
         ]
     
-    @commands.hybrid_command(name='truthordare', aliases=['tod'], description='Play Truth or Dare')
-    async def truth_or_dare(self, ctx: commands.Context):
+    @app_commands.command(name='truthordare', description='Play Truth or Dare')
+    async def truth_or_dare(self, interaction: discord.Interaction):
         """Play Truth or Dare"""
         embed = discord.Embed(
             title="🎲 Truth or Dare",
-            description="React with 💬 for Truth or 🎯 for Dare!",
+            description="Choose Truth or Dare!",
             color=discord.Color.purple()
         )
         
-        msg = await ctx.send(embed=embed)
-        await msg.add_reaction('💬')
-        await msg.add_reaction('🎯')
-        
-        def check(reaction, user):
-            return user == ctx.author and str(reaction.emoji) in ['💬', '🎯'] and reaction.message.id == msg.id
-        
-        try:
-            reaction, user = await self.bot.wait_for('reaction_add', timeout=30.0, check=check)
-            
-            if str(reaction.emoji) == '💬':
-                result = random.choice(self.truth_questions)
-                embed = discord.Embed(
-                    title="💬 Truth",
-                    description=result,
-                    color=discord.Color.blue()
-                )
-            else:
-                result = random.choice(self.dare_challenges)
-                embed = discord.Embed(
-                    title="🎯 Dare",
-                    description=result,
-                    color=discord.Color.red()
-                )
-            
-            embed.set_footer(text=f"Asked by {ctx.author.name}")
-            await ctx.send(embed=embed)
-            
-        except TimeoutError:
-            await ctx.send("⏰ Time's up! No choice was made.")
+        view = TruthOrDareView(self.bot, interaction.user, self.truth_questions, self.dare_challenges)
+        await interaction.response.send_message(embed=embed, view=view)
     
-    @commands.hybrid_command(name='wouldyourather', aliases=['wyr'], description='Get a Would You Rather question')
-    async def would_you_rather(self, ctx: commands.Context):
+    @app_commands.command(name='wouldyourather', description='Get a Would You Rather question')
+    async def would_you_rather(self, interaction: discord.Interaction):
         """Get a Would You Rather question"""
         question = random.choice(self.wyr_questions)
         
@@ -102,14 +74,12 @@ class Games(commands.Cog):
             description=question,
             color=discord.Color.gold()
         )
-        embed.set_footer(text="React with your choice!")
+        embed.set_footer(text="Choose your option!")
         
-        msg = await ctx.send(embed=embed)
-        await msg.add_reaction('1️⃣')
-        await msg.add_reaction('2️⃣')
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='neverhaveiever', aliases=['nhie'], description='Play Never Have I Ever')
-    async def never_have_i_ever(self, ctx: commands.Context):
+    @app_commands.command(name='neverhaveiever', description='Play Never Have I Ever')
+    async def never_have_i_ever(self, interaction: discord.Interaction):
         """Play Never Have I Ever"""
         statement = random.choice(self.nhie_statements)
         
@@ -118,15 +88,13 @@ class Games(commands.Cog):
             description=statement,
             color=discord.Color.green()
         )
-        embed.set_footer(text="React with ✅ if you HAVE or ❌ if you HAVEN'T")
+        embed.set_footer(text="Have you done this?")
         
-        msg = await ctx.send(embed=embed)
-        await msg.add_reaction('✅')
-        await msg.add_reaction('❌')
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='8ball', description='Ask the magic 8ball a question')
+    @app_commands.command(name='8ball', description='Ask the magic 8ball a question')
     @app_commands.describe(question='Your question for the magic 8ball')
-    async def eight_ball(self, ctx: commands.Context, *, question: str):
+    async def eight_ball(self, interaction: discord.Interaction, question: str):
         """Ask the magic 8ball a question"""
         responses = [
             "It is certain.", "Without a doubt.", "Yes, definitely.",
@@ -145,16 +113,16 @@ class Games(commands.Cog):
         embed.add_field(name="Question", value=question, inline=False)
         embed.add_field(name="Answer", value=random.choice(responses), inline=False)
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='rps', description='Play Rock Paper Scissors')
+    @app_commands.command(name='rps', description='Play Rock Paper Scissors')
     @app_commands.describe(choice='Choose rock, paper, or scissors')
     @app_commands.choices(choice=[
         app_commands.Choice(name='Rock', value='rock'),
         app_commands.Choice(name='Paper', value='paper'),
         app_commands.Choice(name='Scissors', value='scissors')
     ])
-    async def rock_paper_scissors(self, ctx: commands.Context, choice: str):
+    async def rock_paper_scissors(self, interaction: discord.Interaction, choice: str):
         """Play Rock Paper Scissors"""
         choice = choice.lower()
         bot_choice = random.choice(['rock', 'paper', 'scissors'])
@@ -177,10 +145,10 @@ class Games(commands.Cog):
         embed.add_field(name="My choice", value=bot_choice.capitalize(), inline=True)
         embed.add_field(name="Result", value=result, inline=False)
         
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='flip', description='Flip a coin')
-    async def coin_flip(self, ctx: commands.Context):
+    @app_commands.command(name='flip', description='Flip a coin')
+    async def coin_flip(self, interaction: discord.Interaction):
         """Flip a coin"""
         result = random.choice(['Heads', 'Tails'])
         embed = discord.Embed(
@@ -188,16 +156,16 @@ class Games(commands.Cog):
             description=f"The coin landed on **{result}**!",
             color=discord.Color.gold()
         )
-        await ctx.send(embed=embed)
+        await interaction.response.send_message(embed=embed)
     
-    @commands.hybrid_command(name='roll', description='Roll dice')
+    @app_commands.command(name='roll', description='Roll dice')
     @app_commands.describe(dice='Format: NdN (e.g., 2d6 for two 6-sided dice)')
-    async def dice_roll(self, ctx: commands.Context, dice: str = "1d6"):
+    async def dice_roll(self, interaction: discord.Interaction, dice: str = "1d6"):
         """Roll dice (format: NdN, e.g., 2d6 for two 6-sided dice)"""
         try:
             rolls, sides = map(int, dice.split('d'))
             if rolls > 25 or sides > 100:
-                return await ctx.send("❌ Too many dice or sides! Max: 25d100", ephemeral=True)
+                return await interaction.response.send_message("❌ Too many dice or sides! Max: 25d100", ephemeral=True)
             
             results = [random.randint(1, sides) for _ in range(rolls)]
             total = sum(results)
@@ -206,9 +174,45 @@ class Games(commands.Cog):
             embed.add_field(name="Rolls", value=', '.join(map(str, results)), inline=False)
             embed.add_field(name="Total", value=str(total), inline=False)
             
-            await ctx.send(embed=embed)
+            await interaction.response.send_message(embed=embed)
         except:
-            await ctx.send("❌ Invalid format! Use NdN (e.g., 2d6)", ephemeral=True)
-
+            await interaction.response.send_message("❌ Invalid format! Use NdN (e.g., 2d6)", ephemeral=True)
+class TruthOrDareView(discord.ui.View):
+    def __init__(self, bot, user, truths, dares):
+        super().__init__(timeout=30.0)
+        self.bot = bot
+        self.user = user
+        self.truths = truths
+        self.dares = dares
+    
+    @discord.ui.button(label="Truth", style=discord.ButtonStyle.primary, emoji="💬")
+    async def truth_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user != self.user:
+            return await interaction.response.send_message("This isn't your game!", ephemeral=True)
+        
+        result = random.choice(self.truths)
+        embed = discord.Embed(
+            title="💬 Truth",
+            description=result,
+            color=discord.Color.blue()
+        )
+        embed.set_footer(text=f"Asked by {self.user.name}")
+        await interaction.response.send_message(embed=embed)
+        self.stop()
+    
+    @discord.ui.button(label="Dare", style=discord.ButtonStyle.danger, emoji="🎯")
+    async def dare_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user != self.user:
+            return await interaction.response.send_message("This isn't your game!", ephemeral=True)
+        
+        result = random.choice(self.dares)
+        embed = discord.Embed(
+            title="🎯 Dare",
+            description=result,
+            color=discord.Color.red()
+        )
+        embed.set_footer(text=f"Asked by {self.user.name}")
+        await interaction.response.send_message(embed=embed)
+        self.stop()
 async def setup(bot):
     await bot.add_cog(Games(bot))

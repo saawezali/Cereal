@@ -17,7 +17,7 @@ class CerealBot(commands.Bot):
         super().__init__(
             command_prefix='!',
             intents=intents,
-            help_command=commands.DefaultHelpCommand(),
+            help_command=None,
         )
     
     async def setup_hook(self):
