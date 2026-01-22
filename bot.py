@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import os
 import asyncio
+import time
 from aiohttp import web
 
 # Core modules
@@ -27,7 +28,7 @@ class CerealBot(commands.Bot):
             help_command=None,
         )
         
-        self.start_time = asyncio.get_event_loop().time()
+        self.start_time = time.time()
     
     async def setup_hook(self):
         """Load all cogs and sync slash commands when bot starts"""
@@ -114,7 +115,7 @@ class CerealBot(commands.Bot):
             'guilds': len(self.guilds),
             'users': len(self.users),
             'latency': round(self.latency * 1000, 2),
-            'uptime': str(asyncio.get_event_loop().time() - self.start_time) if hasattr(self, 'start_time') else 'unknown'
+            'uptime': str(time.time() - self.start_time) if hasattr(self, 'start_time') else 'unknown'
         })
     
     async def close(self):
