@@ -12,7 +12,7 @@ class Moderation(commands.Cog):
     
     @app_commands.command(name='kick', description='Kick a member from the server')
     @app_commands.describe(member='The member to kick', reason='Reason for kicking')
-    @commands.has_permissions(kick_members=True)
+    @app_commands.default_permissions(kick_members=True)
     @commands.bot_has_permissions(kick_members=True)
     async def kick(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
         """Kick a member from the server"""
@@ -41,7 +41,7 @@ class Moderation(commands.Cog):
     
     @app_commands.command(name='ban', description='Ban a member from the server')
     @app_commands.describe(member='The member to ban', reason='Reason for banning')
-    @commands.has_permissions(ban_members=True)
+    @app_commands.default_permissions(ban_members=True)
     @commands.bot_has_permissions(ban_members=True)
     async def ban(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
         """Ban a member from the server"""
@@ -70,7 +70,7 @@ class Moderation(commands.Cog):
     
     @app_commands.command(name='unban', description='Unban a user by their ID')
     @app_commands.describe(user_id='The ID of the user to unban')
-    @commands.has_permissions(ban_members=True)
+    @app_commands.default_permissions(ban_members=True)
     async def unban(self, interaction: discord.Interaction, user_id: str):
         """Unban a member by their ID"""
         try:
@@ -89,7 +89,7 @@ class Moderation(commands.Cog):
         duration='Duration in minutes',
         reason='Reason for timeout'
     )
-    @commands.has_permissions(moderate_members=True)
+    @app_commands.default_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
     async def mute(self, interaction: discord.Interaction, member: discord.Member, duration: int = 60, reason: str = None):
         """Timeout a member (duration in minutes, max 40320)"""
@@ -121,7 +121,7 @@ class Moderation(commands.Cog):
     
     @app_commands.command(name='unmute', description='Remove timeout from a member')
     @app_commands.describe(member='The member to unmute')
-    @commands.has_permissions(moderate_members=True)
+    @app_commands.default_permissions(moderate_members=True)
     @commands.bot_has_permissions(moderate_members=True)
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
         """Remove timeout from a member"""
@@ -135,7 +135,7 @@ class Moderation(commands.Cog):
     
     @app_commands.command(name='clear', description='Delete messages from the channel')
     @app_commands.describe(amount='Number of messages to delete (max 100)')
-    @commands.has_permissions(manage_messages=True)
+    @app_commands.default_permissions(manage_messages=True)
     @commands.bot_has_permissions(manage_messages=True)
     async def clear(self, interaction: discord.Interaction, amount: int = 10):
         """Delete messages from the channel (max 100)"""
@@ -158,7 +158,7 @@ class Moderation(commands.Cog):
     
     @app_commands.command(name='warn', description='Warn a member')
     @app_commands.describe(member='The member to warn', reason='Reason for warning')
-    @commands.has_permissions(moderate_members=True)
+    @app_commands.default_permissions(moderate_members=True)
     async def warn(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
         """Warn a member (stores in memory for now)"""
         embed = discord.Embed(
@@ -178,7 +178,7 @@ class Moderation(commands.Cog):
     
     @app_commands.command(name='slowmode', description='Set slowmode for the current channel')
     @app_commands.describe(seconds='Slowmode delay in seconds (0 to disable, max 21600)')
-    @commands.has_permissions(manage_channels=True)
+    @app_commands.default_permissions(manage_channels=True)
     @commands.bot_has_permissions(manage_channels=True)
     async def slowmode(self, interaction: discord.Interaction, seconds: int = 0):
         """Set slowmode for the current channel"""
