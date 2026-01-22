@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  cereal-bot:
+    build: .
+    container_name: cereal-bot
+    env_file:
+      - .env
+    volumes:
+      - ./logs:/app/logs
+      - ./cereal.db:/app/cereal.db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    ports:
+      - "8080:8080"  # Health check port
+    networks:
+      - bot-network
+
+networks:
+  bot-network:
+    driver: bridge

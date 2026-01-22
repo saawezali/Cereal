@@ -324,5 +324,44 @@ class Fun(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
 
+    @app_commands.command(name='joke', description='Get a random joke')
+    async def joke(self, interaction: discord.Interaction):
+        """Get a random joke from JokeAPI"""
+        try:
+            # Use JokeAPI for clean jokes
+            url = "https://v2.jokeapi.dev/joke/Any?blacklistFlags=nsfw,religious,political,racist,sexist,explicit&type=single"
+            async with self.session.get(url) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+
+                    if data.get('error'):
+                        return await interaction.response.send_message(
+                            "❌ Couldn't fetch a joke right now!",
+                            ephemeral=True
+                        )
+
+                    embed = discord.Embed(
+                        title="😂 Random Joke",
+                        description=data['joke'],
+                        color=discord.Color.orange()
+                    )
+
+                    if data.get('category'):
+                        embed.set_footer(text=f"Category: {data['category']}")
+
+                    await interaction.response.send_message(embed=embed)
+                else:
+                    await interaction.response.send_message(
+                        "❌ Couldn't fetch a joke right now!",
+                        ephemeral=True
+                    )
+
+        except Exception as e:
+            print(f"Joke error: {e}")
+            await interaction.response.send_message(
+                "❌ Error fetching joke. Try again later.",
+                ephemeral=True
+            )
+
 async def setup(bot):
     await bot.add_cog(Fun(bot))

@@ -5,6 +5,10 @@ import asyncio
 from datetime import datetime, timedelta
 import pytz
 import difflib
+import os
+
+# Database imports
+from db import user_repo, guild_repo
 
 # Comprehensive timezone mappings
 TIMEZONE_MAP = {
@@ -621,6 +625,231 @@ class Utility(commands.Cog):
             
         except Exception as e:
             await interaction.response.send_message(f"❌ Error getting timezone: {e}", ephemeral=True)
+
+    @app_commands.command(name='weather', description='Get weather information for a city')
+    @app_commands.describe(city='City name to get weather for')
+    async def weather(self, interaction: discord.Interaction, city: str):
+        """Get weather information for a city using OpenWeatherMap API"""
+        # You'll need to set WEATHER_API_KEY in your environment variables
+        api_key = os.getenv('WEATHER_API_KEY')
+        if not api_key:
+            return await interaction.response.send_message(
+                "❌ Weather API key not configured. Please contact the bot owner.",
+                ephemeral=True
+            )
+
+        try:
+            # Get coordinates first
+            geo_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={api_key}"
+            async with self.session.get(geo_url) as resp:
+                if resp.status != 200:
+                    return await interaction.response.send_message(
+                        f"❌ Couldn't find weather for '{city}'. Try a different city name.",
+                        ephemeral=True
+                    )
+
+                geo_data = await resp.json()
+                if not geo_data:
+                    return await interaction.response.send_message(
+                        f"❌ City '{city}' not found. Try a different city name.",
+                        ephemeral=True
+                    )
+
+                lat, lon = geo_data[0]['lat'], geo_data[0]['lon']
+                city_name = geo_data[0]['name']
+                country = geo_data[0].get('country', '')
+
+            # Get weather data
+            weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
+            async with self.session.get(weather_url) as resp:
+                if resp.status != 200:
+                    return await interaction.response.send_message(
+                        "❌ Error fetching weather data. Try again later.",
+                        ephemeral=True
+                    )
+
+                weather_data = await resp.json()
+
+            # Extract weather info
+            temp = weather_data['main']['temp']
+            feels_like = weather_data['main']['feels_like']
+            humidity = weather_data['main']['humidity']
+            pressure = weather_data['main']['pressure']
+            wind_speed = weather_data['wind']['speed']
+            weather_desc = weather_data['weather'][0]['description'].title()
+            weather_icon = weather_data['weather'][0]['icon']
+
+            # Convert to Fahrenheit
+            temp_f = (temp * 9/5) + 32
+            feels_like_f = (feels_like * 9/5) + 32
+
+            embed = discord.Embed(
+                title=f"🌤️ Weather in {city_name}, {country}",
+                color=discord.Color.blue(),
+                timestamp=interaction.created_at
+            )
+
+            embed.set_thumbnail(url=f"https://openweathermap.org/img/wn/{weather_icon}@2x.png")
+
+            embed.add_field(
+                name="🌡️ Temperature",
+                value=f"{temp:.1f}°C / {temp_f:.1f}°F",
+                inline=True
+            )
+            embed.add_field(
+                name="🤔 Feels Like",
+                value=f"{feels_like:.1f}°C / {feels_like_f:.1f}°F",
+                inline=True
+            )
+            embed.add_field(
+                name="💧 Humidity",
+                value=f"{humidity}%",
+                inline=True
+            )
+
+            embed.add_field(
+                name="🌬️ Wind Speed",
+                value=f"{wind_speed} m/s",
+                inline=True
+            )
+            embed.add_field(
+                name="📊 Pressure",
+                value=f"{pressure} hPa",
+                inline=True
+            )
+            embed.add_field(
+                name="☁️ Conditions",
+                value=weather_desc,
+                inline=True
+            )
+
+            embed.set_footer(text="Data from OpenWeatherMap")
+
+            await interaction.response.send_message(embed=embed)
+
+        except Exception as e:
+            print(f"Weather error: {e}")
+            await interaction.response.send_message(
+                "❌ Error fetching weather data. Try again later.",
+                ephemeral=True
+            )
+
+    @app_commands.command(name='calculate', description='Calculate mathematical expressions')
+    @app_commands.describe(expression='Mathematical expression to evaluate (e.g., 2+2, sin(30), sqrt(16))')
+    async def calculate(self, interaction: discord.Interaction, expression: str):
+        """Calculate mathematical expressions safely"""
+        import math
+        import re
+
+        # Security: Only allow safe mathematical operations
+        allowed_functions = {
+            'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
+            'asin': math.asin, 'acos': math.acos, 'atan': math.atan,
+            'sinh': math.sinh, 'cosh': math.cosh, 'tanh': math.tanh,
+            'sqrt': math.sqrt, 'log': math.log, 'log10': math.log10,
+            'exp': math.exp, 'pow': math.pow, 'abs': abs,
+            'ceil': math.ceil, 'floor': math.floor, 'round': round,
+            'pi': math.pi, 'e': math.e, 'tau': math.tau
+        }
+
+        # Remove dangerous characters and functions
+        expression = re.sub(r'[^\w\s\+\-\*\/\(\)\.\,\^]', '', expression)
+
+        # Replace ^ with ** for exponentiation
+        expression = expression.replace('^', '**')
+
+        try:
+            # Evaluate the expression safely
+            result = eval(expression, {"__builtins__": {}}, allowed_functions)
+
+            # Format the result
+            if isinstance(result, float):
+                # Limit decimal places for readability
+                result_str = f"{result:.6f}".rstrip('0').rstrip('.')
+            else:
+                result_str = str(result)
+
+            embed = discord.Embed(
+                title="🧮 Calculator",
+                color=discord.Color.blue()
+            )
+            embed.add_field(name="Expression", value=f"```{expression}```", inline=False)
+            embed.add_field(name="Result", value=f"```{result_str}```", inline=False)
+
+            await interaction.response.send_message(embed=embed)
+
+        except ZeroDivisionError:
+            await interaction.response.send_message("❌ Cannot divide by zero!", ephemeral=True)
+        except OverflowError:
+            await interaction.response.send_message("❌ Result is too large!", ephemeral=True)
+        except (SyntaxError, NameError, TypeError) as e:
+            await interaction.response.send_message(f"❌ Invalid expression: {str(e)}", ephemeral=True)
+        except Exception as e:
+            await interaction.response.send_message(f"❌ Calculation error: {str(e)}", ephemeral=True)
+
+    @app_commands.command(name='say', description='Make the bot say something')
+    @app_commands.describe(message='What the bot should say')
+    async def say(self, interaction: discord.Interaction, message: str):
+        """Make the bot say something"""
+        # Delete the original command message for clean output
+        try:
+            await interaction.response.defer()
+            await interaction.delete_original_response()
+            await interaction.followup.send(message)
+        except:
+            # If we can't delete, just send normally
+            await interaction.response.send_message(message)
+
+    @app_commands.command(name='embed', description='Create a custom embed')
+    @app_commands.describe(
+        title='Embed title',
+        description='Embed description',
+        color='Hex color code (e.g., #FF0000) or color name',
+        footer='Footer text'
+    )
+    async def create_embed(self, interaction: discord.Interaction, title: str, description: str = None, color: str = None, footer: str = None):
+        """Create a custom embed"""
+        # Parse color
+        embed_color = discord.Color.blue()  # Default
+
+        if color:
+            color = color.strip()
+            if color.startswith('#'):
+                # Hex color
+                try:
+                    embed_color = discord.Color(int(color[1:], 16))
+                except:
+                    pass
+            else:
+                # Named color
+                color_map = {
+                    'red': discord.Color.red(),
+                    'green': discord.Color.green(),
+                    'blue': discord.Color.blue(),
+                    'yellow': discord.Color.yellow(),
+                    'orange': discord.Color.orange(),
+                    'purple': discord.Color.purple(),
+                    'pink': discord.Color.pink(),
+                    'gold': discord.Color.gold(),
+                    'gray': discord.Color.gray(),
+                    'black': discord.Color.from_rgb(0, 0, 0),
+                    'white': discord.Color.from_rgb(255, 255, 255)
+                }
+                embed_color = color_map.get(color.lower(), embed_color)
+
+        embed = discord.Embed(
+            title=title[:256],  # Discord title limit
+            description=description[:4096] if description else None,  # Discord description limit
+            color=embed_color,
+            timestamp=interaction.created_at
+        )
+
+        if footer:
+            embed.set_footer(text=footer[:2048])  # Discord footer limit
+
+        embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
+
+        await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name='help', description='Show available commands')
     async def help_command(self, interaction: discord.Interaction):

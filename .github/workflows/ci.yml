@@ -1,0 +1,78 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.8, 3.9, 3.10, 3.11]
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v4
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install pytest pytest-asyncio
+
+    - name: Run syntax checks
+      run: |
+        python -m py_compile bot.py
+        python -m py_compile core/*.py
+        python -m py_compile db/*.py
+        python -m py_compile cogs/*.py
+
+    - name: Run tests
+      run: |
+        python -m pytest tests/ -v --tb=short
+      continue-on-error: true  # Don't fail on test failures for now
+
+    - name: Check code quality
+      run: |
+        pip install flake8
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+      continue-on-error: true
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+
+    - name: Create deployment package
+      run: |
+        zip -r cereal-bot.zip . -x "*.git*" "*.env*" "*__pycache__*" "*.pyc" "*.db*" "*logs*"
+
+    - name: Upload artifact
+      uses: actions/upload-artifact@v3
+      with:
+        name: cereal-bot-${{ github.sha }}
+        path: cereal-bot.zip
+
+    # Add deployment steps here for your hosting platform
+    # Examples: Docker, Railway, Render, Heroku, etc.

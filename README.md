@@ -45,6 +45,7 @@ A feature-rich Discord bot with moderation, games, fun commands, and utility too
 - `/say` - Make bot say something
 - `/embed` - Create custom embeds
 - `/timezone` - Check time in any timezone (with autocomplete)
+- `/weather` - Get weather information (requires API key)
 - `/help` - Show all available commands
 
 ## 🚀 Getting Started
@@ -67,9 +68,14 @@ pip install -r requirements.txt
 ```
 
 3. **Configure environment variables**
-Create a `.env` file in the root directory:
+Create a `.env` file in the root directory by copying `.env.example`:
+```bash
+cp .env.example .env
+```
+Then edit `.env` with your actual values:
 ```
 DISCORD_TOKEN=your_bot_token_here
+WEATHER_API_KEY=your_openweather_api_key_here  # Optional
 ```
 
 4. **Run the bot**
@@ -102,17 +108,39 @@ Some legacy prefix commands (`!`) may still work but are being phased out.
 ```
 cereal-bot/
 │
-├── bot.py                 # Main bot file
-├── cogs/
+├── bot.py                 # Main bot file with health check server
+├── core/                  # Core functionality
+│   ├── __init__.py       # Core module exports
+│   ├── config.py         # Configuration management
+│   ├── constants.py      # Bot constants and settings
+│   └── logger.py         # Structured logging
+├── db/                    # Database module
+│   ├── __init__.py       # Database exports
+│   ├── base.py           # Database connection & operations
+│   ├── models.py         # SQLAlchemy models
+│   ├── repository.py     # Repository pattern implementation
+│   └── migration/        # Database migration scripts
+│       ├── __init__.py
+│       ├── base.py       # Migration utilities
+│       └── example_migration.py
+├── cogs/                  # Feature modules (cogs)
 │   ├── moderation.py     # Moderation commands
 │   ├── games.py          # Game commands
 │   ├── fun.py            # Fun & meme commands
 │   └── utility.py        # Utility commands
+├── scripts/               # Utility scripts
+│   └── backup_db.py      # Database backup script
+├── tests/                 # Unit tests
+│   └── test_basic.py     # Basic functionality tests
 │
-├── .env                  # Environment variables (create from .env.example)
+├── .env                   # Environment variables (create from .env.example)
+├── .env.example          # Environment variables template
 ├── .gitignore           # Git ignore rules
 ├── requirements.txt     # Python dependencies
+├── Dockerfile           # Docker containerization
+├── docker-compose.yml   # Docker Compose configuration
 ├── README.md            # This file
+├── LICENSE              # MIT License
 └── CONTRIBUTING.md      # Developer documentation
 ```
 
@@ -151,14 +179,176 @@ await self.change_presence(
 )
 ```
 
-## 📝 To-Do / Future Features
+## � Deployment
+
+### Local Development
+```bash
+# Clone and setup
+git clone https://github.com/yourusername/cereal-bot.git
+cd cereal-bot
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+pip install -r requirements.txt
+cp .env.example .env
+# Edit .env with your tokens
+python bot.py
+```
+
+### Production Deployment
+
+#### Option 1: Docker (Recommended)
+```dockerfile
+# Add this Dockerfile to your project
+FROM python:3.11-slim
+
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+CMD ["python", "bot.py"]
+```
+
+```bash
+docker build -t cereal-bot .
+docker run -d --env-file .env cereal-bot
+```
+
+#### Option 2: Systemd Service (Linux)
+Create `/etc/systemd/system/cereal-bot.service`:
+```ini
+[Unit]
+Description=Cereal Discord Bot
+After=network.target
+
+[Service]
+Type=simple
+User=your-user
+WorkingDirectory=/path/to/cereal-bot
+ExecStart=/path/to/venv/bin/python bot.py
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
+```
+
+```bash
+sudo systemctl enable cereal-bot
+sudo systemctl start cereal-bot
+```
+
+#### Option 3: PM2 (Node.js process manager, works with Python)
+```bash
+npm install -g pm2
+pm2 start bot.py --name cereal-bot --interpreter python3
+pm2 startup
+pm2 save
+```
+
+### Environment Variables for Production
+- Set `LOG_LEVEL=WARNING` for production
+- Use a production database URL if needed
+- Set up proper monitoring and alerts
+
+## 📊 Monitoring & Health Checks
+
+The bot includes built-in health monitoring:
+
+- **Health Check Endpoint**: `http://localhost:8080/health`
+- **Metrics Available**:
+  - Bot status and uptime
+  - Guild and user counts
+  - Discord API latency
+  - Memory usage
+
+### Using Health Checks
+
+```bash
+# Check bot health
+curl http://localhost:8080/health
+
+# Expected response:
+{
+  "status": "healthy",
+  "bot_name": "Cereal#9626",
+  "guilds": 5,
+  "users": 1250,
+  "latency": 45.67,
+  "uptime": "3600.5"
+}
+```
+
+### Database Backups
+
+Automated database backups are available:
+
+```bash
+# Create backup
+python scripts/backup_db.py
+
+# List available backups
+python scripts/backup_db.py list
+```
+
+Backups are stored in the `backups/` directory with timestamps.
+
+## 🧪 Testing & Quality Assurance
+
+### Running Tests
+
+```bash
+# Install test dependencies
+pip install -r requirements.txt
+
+# Run all tests
+python -m pytest tests/ -v
+
+# Run with coverage
+pip install pytest-cov
+python -m pytest tests/ --cov=. --cov-report=html
+```
+
+### Code Quality
+
+```bash
+# Check syntax
+python -m py_compile bot.py core/*.py db/*.py cogs/*.py
+
+# Lint code
+pip install flake8
+flake8 . --max-line-length=127 --max-complexity=10
+```
+
+### CI/CD Pipeline
+
+The project includes GitHub Actions for automated testing:
+
+- **Multi-Python Version Testing**: Python 3.8-3.11
+- **Syntax Validation**: Automatic compilation checks
+- **Code Quality**: Flake8 linting
+- **Automated Deployment**: Ready for production deployment
+
+## 🔒 Security Features
+
+- **Input Validation**: All user inputs are validated and sanitized
+- **Rate Limiting**: Built-in cooldowns prevent spam
+- **Secure Token Storage**: Environment variables for sensitive data
+- **Permission Checks**: Discord permission system integration
+- **Error Handling**: Comprehensive error handling without data leakage
 
 - [x] Slash command conversion (completed)
 - [x] Permission system for moderation commands (completed)
 - [x] Autocomplete for timezone command (completed)
 - [x] API integration for dynamic content (completed)
-- [ ] Database integration (PostgreSQL/SQLite)
-- [ ] Leveling system with XP and ranks
+- [x] Database integration (SQLite) (completed)
+- [x] XP system removal (completed)
+- [ ] Unit tests and integration tests
+- [ ] Docker containerization
+- [ ] CI/CD pipeline (GitHub Actions)
+- [ ] Health check endpoints
+- [ ] Database migrations system
+- [ ] Error monitoring (Sentry)
 - [ ] Auto-moderation (spam filter, bad word filter)
 - [ ] Custom prefix per server
 - [ ] Economy system
@@ -166,7 +356,6 @@ await self.change_presence(
 - [ ] Tickets system
 - [ ] Web dashboard
 - [ ] Advanced logging system
-- [ ] Weather command
 - [ ] Translation command
 
 ## 🤝 Contributing

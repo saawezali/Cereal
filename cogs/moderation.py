@@ -2,6 +2,9 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from datetime import timedelta
+
+# Database imports
+from db import warning_repo, user_repo, guild_repo
 import asyncio
 
 class Moderation(commands.Cog):
@@ -160,21 +163,155 @@ class Moderation(commands.Cog):
     @app_commands.describe(member='The member to warn', reason='Reason for warning')
     @app_commands.default_permissions(moderate_members=True)
     async def warn(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
-        """Warn a member (stores in memory for now)"""
-        embed = discord.Embed(
-            title="⚠️ Member Warned",
-            description=f"{member.mention} has been warned",
-            color=discord.Color.yellow()
-        )
-        embed.add_field(name="Reason", value=reason or "No reason provided")
-        embed.add_field(name="Moderator", value=interaction.user.mention)
-        await interaction.response.send_message(embed=embed)
-        
-        # Try to DM the user
+        """Warn a member and store in database"""
+        # Check permissions
+        if member.id == interaction.user.id:
+            return await interaction.response.send_message("❌ You cannot warn yourself!", ephemeral=True)
+
+        if member.top_role >= interaction.user.top_role:
+            return await interaction.response.send_message("❌ You cannot warn someone with equal or higher role!", ephemeral=True)
+
+        if member.id == interaction.guild.owner_id:
+            return await interaction.response.send_message("❌ Cannot warn the server owner!", ephemeral=True)
+
+        if member.id == interaction.client.user.id:
+            return await interaction.response.send_message("❌ I cannot warn myself!", ephemeral=True)
+
         try:
-            await member.send(f"⚠️ You have been warned in {interaction.guild.name}\n**Reason:** {reason or 'No reason provided'}")
-        except:
-            pass
+            # Add warning to database
+            warning = await warning_repo.add_warning(
+                guild_id=interaction.guild.id,
+                user_id=member.id,
+                moderator_id=interaction.user.id,
+                reason=reason or "No reason provided"
+            )
+
+            # Get warning count
+            warning_count = await warning_repo.get_warning_count(
+                interaction.guild.id,
+                member.id
+            )
+
+            # Create embed
+            embed = discord.Embed(
+                title="⚠️ Member Warned",
+                description=f"{member.mention} has been warned",
+                color=discord.Color.yellow()
+            )
+            embed.add_field(name="Reason", value=reason or "No reason provided", inline=False)
+            embed.add_field(name="Moderator", value=interaction.user.mention, inline=True)
+            embed.add_field(
+                name="Warning Count",
+                value=f"{warning_count} warning{'s' if warning_count != 1 else ''}",
+                inline=True
+            )
+            embed.set_footer(text=f"Warning ID: {warning.id}")
+
+            await interaction.response.send_message(embed=embed)
+
+            # Try to DM the user
+            try:
+                dm_embed = discord.Embed(
+                    title=f"You were warned in {interaction.guild.name}",
+                    color=discord.Color.red()
+                )
+                dm_embed.add_field(name="Reason", value=reason or "No reason provided", inline=False)
+                dm_embed.add_field(
+                    name="Moderator",
+                    value=interaction.user.mention,
+                    inline=True
+                )
+                dm_embed.add_field(
+                    name="Warning Count",
+                    value=f"{warning_count} warning{'s' if warning_count != 1 else ''}",
+                    inline=True
+                )
+                await member.send(embed=dm_embed)
+            except discord.Forbidden:
+                # User has DMs disabled
+                pass
+
+        except Exception as e:
+            await interaction.response.send_message(
+                f"❌ An error occurred while warning the user.",
+                ephemeral=True
+            )
+
+    @app_commands.command(name='warnings', description='View warnings for a member')
+    @app_commands.describe(member='The member to check warnings for (leave empty for yourself)')
+    async def warnings(self, interaction: discord.Interaction, member: discord.Member = None):
+        """View warning history for a member"""
+        target_user = member or interaction.user
+
+        try:
+            # Get warnings from database
+            warnings = await warning_repo.get_guild_warnings(
+                interaction.guild.id,
+                target_user.id
+            )
+
+            if not warnings:
+                await interaction.response.send_message(
+                    f"{target_user.mention} has no warnings in this server.",
+                    ephemeral=True
+                )
+                return
+
+            # Create embed
+            embed = discord.Embed(
+                title=f"⚠️ Warnings for {target_user.name}",
+                color=discord.Color.orange()
+            )
+
+            # Show last 5 warnings
+            for i, warning in enumerate(warnings[-5:], 1):
+                moderator = interaction.guild.get_member(warning.moderator_id)
+                moderator_name = moderator.name if moderator else f"User {warning.moderator_id}"
+
+                embed.add_field(
+                    name=f"Warning #{len(warnings) - len(warnings) + i}",
+                    value=f"**Reason:** {warning.reason}\n"
+                          f"**Moderator:** {moderator_name}\n"
+                          f"**Date:** {warning.created_at.strftime('%Y-%m-%d %H:%M')}",
+                    inline=False
+                )
+
+            embed.set_footer(text=f"Total warnings: {len(warnings)}")
+
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        except Exception as e:
+            await interaction.response.send_message(
+                f"❌ An error occurred while fetching warnings.",
+                ephemeral=True
+            )
+
+    @app_commands.command(name='clear_warnings', description='Clear all warnings for a member')
+    @app_commands.describe(member='The member to clear warnings for')
+    @app_commands.default_permissions(administrator=True)
+    async def clear_warnings(self, interaction: discord.Interaction, member: discord.Member):
+        """Clear all warnings for a member (admin only)"""
+        try:
+            # Delete all warnings for this user in this guild
+            deleted_count = await warning_repo.delete(
+                guild_id=interaction.guild.id,
+                user_id=member.id
+            )
+
+            embed = discord.Embed(
+                title="🗑️ Warnings Cleared",
+                description=f"Cleared {deleted_count} warning{'s' if deleted_count != 1 else ''} for {member.mention}",
+                color=discord.Color.green()
+            )
+            embed.add_field(name="Moderator", value=interaction.user.mention)
+
+            await interaction.response.send_message(embed=embed)
+
+        except Exception as e:
+            await interaction.response.send_message(
+                f"❌ An error occurred while clearing warnings.",
+                ephemeral=True
+            )
     
     @app_commands.command(name='slowmode', description='Set slowmode for the current channel')
     @app_commands.describe(seconds='Slowmode delay in seconds (0 to disable, max 21600)')

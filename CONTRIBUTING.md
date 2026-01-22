@@ -75,7 +75,20 @@ python bot.py
 cereal-bot/
 │
 ├── bot.py                      # Main entry point - bot initialization
-│
+├── core/                       # Core functionality
+│   ├── __init__.py            # Core module exports
+│   ├── config.py              # Configuration management
+│   ├── constants.py           # Bot constants and settings
+│   └── logger.py              # Structured logging
+├── db/                         # Database module
+│   ├── __init__.py            # Database exports
+│   ├── base.py                # Database connection & operations
+│   ├── models.py              # SQLAlchemy models
+│   ├── repository.py          # Repository pattern implementation
+│   └── migration/             # Database migration scripts
+│       ├── __init__.py
+│       ├── base.py            # Migration utilities
+│       └── example_migration.py
 ├── cogs/                       # Feature modules (cogs)
 │   ├── moderation.py          # Moderation commands
 │   ├── games.py               # Game commands
