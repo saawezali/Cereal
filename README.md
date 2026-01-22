@@ -1,11 +1,11 @@
 # 🥣 Cereal Discord Bot
 
-A feature-rich Discord bot with moderation, games, music, memes, and utility commands.
+A feature-rich Discord bot with moderation, games, fun commands, and utility tools.
 
 ## ✨ Features
 
 ### 🛡️ Moderation
-- `/kick` - Kick members
+- `/kick` - Kick members from the server
 - `/ban` / `/unban` - Ban/unban members
 - `/mute` / `/unmute` - Timeout members
 - `/clear` - Bulk delete messages
@@ -13,35 +13,39 @@ A feature-rich Discord bot with moderation, games, music, memes, and utility com
 - `/slowmode` - Set channel slowmode
 
 ### 🎮 Games
-- `!truthordare` / `!tod` - Play Truth or Dare
-- `!wouldyourather` / `!wyr` - Would You Rather questions
-- `!neverhaveiever` / `!nhie` - Never Have I Ever
-- `!8ball` - Ask the magic 8-ball
-- `!rps` - Rock Paper Scissors
-- `!flip` - Flip a coin
-- `!roll` - Roll dice
+- `/truthordare` - Play Truth or Dare
+- `/wouldyourather` - Would You Rather questions
+- `/neverhaveiever` - Never Have I Ever
+- `/8ball` - Ask the magic 8-ball
+- `/rps` - Rock Paper Scissors
+- `/flip` - Flip a coin
+- `/roll` - Roll dice
 
 ### 😂 Fun & Memes
-- `!meme` - Get random memes from Reddit
-- `!dadjoke` - Get a dad joke
-- `!fact` - Random facts
-- `!roast` - Roast someone
-- `!compliment` - Compliment someone
-- `!ship` - Ship two users
-- `!avatar` - View user's avatar
-- `!userinfo` - Get user information
-- `!serverinfo` - Get server information
+- `/meme` - Get random memes from Reddit
+- `/dadjoke` - Get a dad joke
+- `/fact` - Random facts
+- `/roast` - Roast someone
+- `/compliment` - Compliment someone
+- `/quote` - Get inspirational quotes
+- `/ship` - Ship two users together
+- `/avatar` - View user's avatar
+- `/userinfo` - Get user information
+- `/serverinfo` - Get server information
 
 ### 🔧 Utility
-- `!remind` - Set reminders
-- `!reminders` - View your reminders
-- `!poll` - Create a poll
-- `!suggest` - Submit suggestions
-- `!timer` - Start a countdown
-- `!calculate` - Calculator
-- `!ping` - Check bot latency
-- `!say` - Make bot say something (mod only)
-- `!embed` - Create custom embeds (mod only)
+- `/remind` - Set reminders
+- `/reminders` - View your active reminders
+- `/poll` - Create interactive polls
+- `/afk` - Set AFK status
+- `/suggest` - Submit suggestions
+- `/timer` - Start a countdown timer
+- `/calculate` - Calculate mathematical expressions
+- `/ping` - Check bot latency
+- `/say` - Make bot say something
+- `/embed` - Create custom embeds
+- `/timezone` - Check time in any timezone (with autocomplete)
+- `/help` - Show all available commands
 
 ## 🚀 Getting Started
 
@@ -63,13 +67,9 @@ pip install -r requirements.txt
 ```
 
 3. **Configure environment variables**
-```bash
-cp .env.example .env
-```
-Edit `.env` and add your Discord bot token:
+Create a `.env` file in the root directory:
 ```
 DISCORD_TOKEN=your_bot_token_here
-GUILD_ID=None
 ```
 
 4. **Run the bot**
@@ -79,15 +79,23 @@ python bot.py
 
 ## 🎮 Usage
 
-Cereal supports both **slash commands** (`/`) and **prefix commands** (`!`):
+Cereal primarily uses **slash commands** (`/`) for the best user experience:
 
 ```
-/ping          or    !ping
-/meme          or    !meme
-/kick @user    or    !kick @user
+/ping
+/meme
+/kick @user
+/timezone Tokyo
+/compliment @user
 ```
 
-Slash commands have autocomplete and parameter hints for better UX!
+Slash commands provide:
+- **Autocomplete** for parameters (like timezone locations)
+- **Parameter hints** and validation
+- **Better mobile experience**
+- **Permission checking** built into Discord
+
+Some legacy prefix commands (`!`) may still work but are being phased out.
 
 ## 📁 Project Structure
 
@@ -98,14 +106,14 @@ cereal-bot/
 ├── cogs/
 │   ├── moderation.py     # Moderation commands
 │   ├── games.py          # Game commands
-│   ├── music.py          # Music commands
 │   ├── fun.py            # Fun & meme commands
 │   └── utility.py        # Utility commands
 │
 ├── .env                  # Environment variables (create from .env.example)
-├── .env.example          # Example environment file
-├── requirements.txt      # Python dependencies
-└── README.md            # This file
+├── .gitignore           # Git ignore rules
+├── requirements.txt     # Python dependencies
+├── README.md            # This file
+└── CONTRIBUTING.md      # Developer documentation
 ```
 
 ## 🔑 Getting Your Bot Token
@@ -145,6 +153,10 @@ await self.change_presence(
 
 ## 📝 To-Do / Future Features
 
+- [x] Slash command conversion (completed)
+- [x] Permission system for moderation commands (completed)
+- [x] Autocomplete for timezone command (completed)
+- [x] API integration for dynamic content (completed)
 - [ ] Database integration (PostgreSQL/SQLite)
 - [ ] Leveling system with XP and ranks
 - [ ] Auto-moderation (spam filter, bad word filter)
@@ -153,8 +165,9 @@ await self.change_presence(
 - [ ] Giveaway system
 - [ ] Tickets system
 - [ ] Web dashboard
-- [ ] Logging system
-- [ ] Music system (requires Lavalink setup - currently disabled)
+- [ ] Advanced logging system
+- [ ] Weather command
+- [ ] Translation command
 
 ## 🤝 Contributing
 
@@ -170,9 +183,12 @@ This project is licensed under the MIT License.
 ## 🙏 Credits
 
 - Built with [discord.py](https://github.com/Rapptz/discord.py)
-- Music powered by [Lavalink](https://github.com/freyacodes/Lavalink)
-- Memes from Reddit
-- Jokes from various APIs
+- Memes from Reddit API
+- Dad jokes from [icanhazdadjoke](https://icanhazdadjoke.com/)
+- Facts from [uselessfacts.jsph.pl](https://uselessfacts.jsph.pl/)
+- Quotes from [zenquotes.io](https://zenquotes.io/)
+- Evil insults from [evilinsult.com](https://evilinsult.com/)
+- Timezone data from [pytz](https://pythonhosted.org/pytz/)
 
 ## 📧 Support
 
@@ -182,4 +198,4 @@ For issues or questions, please:
 
 ---
 
-Made with ❤️ and ☕ by [Your Name]
+Made with ❤️ by Saawez Ali

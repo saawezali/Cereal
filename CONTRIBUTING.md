@@ -26,7 +26,6 @@ Welcome to the Cereal Bot development team! This document contains everything yo
 - **Git**: For version control
 - **Discord Account**: For testing
 - **Code Editor**: VS Code recommended with Python extension
-- **Java**: 11+ (only if working on music features)
 
 ### Initial Setup
 
@@ -53,16 +52,9 @@ pip install -r requirements.txt
 ```
 
 4. **Set up environment variables**
-```bash
-cp .env.example .env
-```
-
-Edit `.env` with your credentials:
+Create a `.env` file with your credentials:
 ```env
 DISCORD_TOKEN=your_test_bot_token_here
-LAVALINK_HOST=localhost
-LAVALINK_PORT=2333
-LAVALINK_PASSWORD=youshallnotpass
 ```
 
 5. **Create a test Discord server**
@@ -85,24 +77,17 @@ cereal-bot/
 ├── bot.py                      # Main entry point - bot initialization
 │
 ├── cogs/                       # Feature modules (cogs)
-│   ├── __init__.py            # Makes cogs a package
 │   ├── moderation.py          # Moderation commands
 │   ├── games.py               # Game commands
-│   ├── music.py               # Music playback
 │   ├── fun.py                 # Fun & memes
 │   └── utility.py             # Utility commands
 │
-├── utils/                      # Utility functions (to be created)
-│   ├── __init__.py
-│   ├── database.py            # Database operations
-│   ├── checks.py              # Custom command checks
-│   └── helpers.py             # Helper functions
-│
-├── config/                     # Configuration files (to be created)
-│   ├── __init__.py
-│   └── settings.py            # Bot settings & constants
-│
-├── tests/                      # Unit tests (to be created)
+├── .env                       # Environment variables (not in repo)
+├── .gitignore                # Git ignore rules
+├── requirements.txt          # Python dependencies
+├── README.md                 # Project documentation
+└── CONTRIBUTING.md           # Developer documentation
+```
 │   ├── __init__.py
 │   ├── test_moderation.py
 │   ├── test_games.py
@@ -862,11 +847,6 @@ DISCORD_TOKEN=your_production_token
 ENVIRONMENT=production
 LOG_LEVEL=INFO
 DATABASE_URL=postgresql://user:pass@host:5432/db
-
-# Lavalink (if using music)
-LAVALINK_HOST=lavalink.example.com
-LAVALINK_PORT=2333
-LAVALINK_PASSWORD=secure_password
 ```
 
 ---
@@ -910,20 +890,7 @@ venv\Scripts\activate     # Windows
 @commands.bot_has_permissions(manage_messages=True)  # Bot permission
 ```
 
-**4. Music not working**
-```
-Possible causes:
-- Lavalink not running
-- Wrong Lavalink connection details
-- Wavelink not installed
-
-Solutions:
-- Start Lavalink: java -jar Lavalink.jar
-- Check LAVALINK_* env variables
-- pip install wavelink
-```
-
-**5. Database errors**
+**4. Database errors**
 ```python
 # Error: database is locked
 # Solution: Use connection pooling or async database library
@@ -979,7 +946,6 @@ logging.getLogger('discord.http').setLevel(logging.WARNING)
 - **Python**: https://docs.python.org/3/
 
 ### Libraries
-- **Wavelink** (music): https://wavelink.dev/
 - **aiohttp** (HTTP requests): https://docs.aiohttp.org/
 - **asyncpg** (PostgreSQL): https://magicstack.github.io/asyncpg/
 
@@ -1013,7 +979,6 @@ logging.getLogger('discord.http').setLevel(logging.WARNING)
 
 ### Low Priority
 - [ ] Web dashboard
-- [ ] Music playlist saving
 - [ ] Trivia game with categories
 - [ ] Mini-games (hangman, etc.)
 - [ ] Starboard
