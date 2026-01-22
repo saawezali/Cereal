@@ -160,6 +160,39 @@ cereal-bot/
 9. Select permissions you need (Administrator for all features)
 10. Use the generated URL to invite your bot
 
+## ➕ Invite Your Bot to Servers
+
+Once your bot is public, others can add it to their servers:
+
+### Make Your Bot Public
+1. In [Discord Developer Portal](https://discord.com/developers/applications)
+2. Select your bot → "Bot" section
+3. Turn **ON** "Public Bot" 
+4. Keep "Requires OAuth2 Code Grant" **OFF**
+
+### Generate Invite Link
+1. Go to "OAuth2" → "URL Generator"
+2. Select scopes: `bot` and `applications.commands`
+3. Select permissions:
+   - Send Messages
+   - Use Slash Commands
+   - Read Message History
+   - Embed Links
+   - Attach Files
+   - Add Reactions
+   - Kick Members (for moderation)
+   - Ban Members (for moderation)
+   - Manage Messages (for moderation)
+4. **Copy the generated URL** and share it!
+
+### Share Your Bot
+- **Direct Link:** Share the OAuth2 URL with server owners
+- **GitHub:** Add the invite link to your repository
+- **Bot Lists:** Submit to sites like top.gg, discordbotlist.com
+- **Communities:** Share in Discord bot development servers
+
+**Invite Link Format:** `https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_ID&permissions=PERMISSIONS&scope=bot%20applications.commands`
+
 ## 🛠️ Customization
 
 ### Change Command Prefix
