@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import pytz
 import difflib
 import os
+import aiohttp
 
 # Database imports
 from db import user_repo, guild_repo
@@ -222,10 +223,20 @@ class Utility(commands.Cog):
         self.bot = bot
         self.reminders = []  # Will store: (user_id, channel_id, time, message)
         self.afk_users = {}  # Store AFK users: {user_id: reason}
+        self.session = None  # aiohttp session for API calls
         self.check_reminders.start()
     
-    def cog_unload(self):
+    @commands.Cog.listener()
+    async def cog_load(self):
+        """Create aiohttp session when cog loads"""
+        self.session = aiohttp.ClientSession()
+    
+    @commands.Cog.listener()
+    async def cog_unload(self):
+        """Close aiohttp session when cog unloads"""
         self.check_reminders.cancel()
+        if self.session:
+            await self.session.close()
     
     @tasks.loop(seconds=30)
     async def check_reminders(self):
