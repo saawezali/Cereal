@@ -101,22 +101,41 @@ class CerealBot(commands.Bot):
         # Start health check server
         self.health_app = web.Application()
         self.health_app.router.add_get('/health', self.health_check)
+        self.health_app.router.add_get('/ping', self.ping_check)  # Simple ping endpoint
         self.health_runner = web.AppRunner(self.health_app)
         await self.health_runner.setup()
         site = web.TCPSite(self.health_runner, '0.0.0.0', 8080)
         await site.start()
-        logger.info('Health check server started on port 8080')
+        logger.info('Health check server started on port 8080 (/health and /ping endpoints)')
+        
+        # Give health server time to be ready
+        await asyncio.sleep(2)
+        logger.info('Bot fully ready and health server operational')
     
     async def health_check(self, request):
         """Health check endpoint for monitoring"""
-        return web.json_response({
-            'status': 'healthy',
-            'bot_name': str(self.user),
-            'guilds': len(self.guilds),
-            'users': len(self.users),
-            'latency': round(self.latency * 1000, 2),
-            'uptime': str(time.time() - self.start_time) if hasattr(self, 'start_time') else 'unknown'
-        })
+        try:
+            # Quick response check
+            return web.json_response({
+                'status': 'healthy',
+                'bot_name': str(self.user) if self.user else 'Unknown',
+                'guilds': len(self.guilds) if self.guilds else 0,
+                'users': len(self.users) if self.users else 0,
+                'latency': round(self.latency * 1000, 2) if self.latency else 0,
+                'uptime': str(time.time() - self.start_time) if hasattr(self, 'start_time') else 'unknown',
+                'timestamp': time.time()
+            })
+        except Exception as e:
+            logger.error(f"Health check error: {e}")
+            return web.json_response({
+                'status': 'error',
+                'error': str(e),
+                'timestamp': time.time()
+            }, status=500)
+    
+    async def ping_check(self, request):
+        """Simple ping endpoint for uptime monitoring"""
+        return web.json_response({'status': 'pong', 'timestamp': time.time()})
     
     async def close(self):
         """Clean shutdown"""
