@@ -96,7 +96,6 @@ Cereal respects your privacy and follows Discord's guidelines:
 
 ## 📊 Bot Statistics
 
-- **Servers**: 3+ active communities
 - **Commands**: 40+ available features
 - **Uptime**: 99%+ reliability
 - **Support**: Active development and maintenance
