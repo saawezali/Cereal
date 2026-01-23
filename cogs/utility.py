@@ -226,12 +226,10 @@ class Utility(commands.Cog):
         self.session = None  # aiohttp session for API calls
         self.check_reminders.start()
     
-    @commands.Cog.listener()
     async def cog_load(self):
         """Create aiohttp session when cog loads"""
         self.session = aiohttp.ClientSession()
     
-    @commands.Cog.listener()
     async def cog_unload(self):
         """Close aiohttp session when cog unloads"""
         self.check_reminders.cancel()
