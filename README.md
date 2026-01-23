@@ -398,7 +398,13 @@ Contributions are welcome! Feel free to:
 - Suggest features
 - Submit pull requests
 
-## 📜 License
+## � Legal & Policies
+
+- **[Privacy Policy](PRIVACY_POLICY.md)** - How we handle your data
+- **[Terms of Service](TERMS_OF_SERVICE.md)** - Usage rules and guidelines
+- **[License](LICENSE)** - MIT License terms
+
+## �📜 License
 
 This project is licensed under the MIT License.
 
