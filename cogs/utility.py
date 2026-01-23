@@ -235,6 +235,7 @@ class Utility(commands.Cog):
         self.check_reminders.cancel()
         if self.session:
             await self.session.close()
+            self.session = None
     
     @tasks.loop(seconds=30)
     async def check_reminders(self):
