@@ -31,8 +31,8 @@ Welcome to the Cereal Bot development team! This document contains everything yo
 
 1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/cereal-bot.git
-cd cereal-bot
+git clone https://github.com/saawezali/Cereal.git
+cd Cereal
 ```
 
 2. **Create virtual environment**
@@ -72,7 +72,7 @@ python bot.py
 ## 📁 Project Structure
 
 ```
-cereal-bot/
+Cereal/
 │
 ├── bot.py                      # Main entry point - bot initialization
 ├── core/                       # Core functionality
@@ -800,8 +800,8 @@ sudo apt update
 sudo apt install python3 python3-pip python3-venv
 
 # Clone repo
-git clone https://github.com/yourusername/cereal-bot.git
-cd cereal-bot
+git clone https://github.com/saawezali/Cereal.git
+cd Cereal
 
 # Setup
 python3 -m venv venv
@@ -828,10 +828,10 @@ After=network.target
 
 [Service]
 Type=simple
-User=yourusername
-WorkingDirectory=/home/yourusername/cereal-bot
-Environment="PATH=/home/yourusername/cereal-bot/venv/bin"
-ExecStart=/home/yourusername/cereal-bot/venv/bin/python bot.py
+User=saawezali
+WorkingDirectory=/home/saawezali/Cereal
+Environment="PATH=/home/saawezali/Cereal/venv/bin"
+ExecStart=/home/saawezali/Cereal/venv/bin/python bot.py
 Restart=always
 
 [Install]

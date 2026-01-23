@@ -1,4 +1,4 @@
-# 🥣 Cereal Discord Bot
+# Cereal Discord Bot
 
 **Enhance your Discord server with fun, moderation, and utility features!**
 
@@ -122,8 +122,82 @@ We're constantly working on new features! Upcoming additions may include:
 
 **Made with ❤️ for the Discord community**
 
-*For developers: This repository contains the bot's source code. See development documentation for contribution guidelines.*
+## 🛠️ For Developers
 
+### Prerequisites
+- Python 3.8 or higher
+- Discord Bot Token ([Get one here](https://discord.com/developers/applications))
+- Git for version control
+
+### Quick Setup
+1. **Clone the repository**
+```bash
+git clone https://github.com/saawezali/Cereal.git
+cd Cereal
+```
+
+2. **Set up virtual environment**
+```bash
+python -m venv venv
+# Windows
+venv\Scripts\activate
+# macOS/Linux
+source venv/bin/activate
+```
+
+3. **Install dependencies**
+```bash
+pip install -r requirements.txt
+```
+
+4. **Configure environment**
+```bash
+cp .env.example .env
+# Edit .env with your actual API keys and bot token
+```
+
+5. **Run the bot**
+```bash
+python bot.py
+```
+
+### Project Structure
+```
+Cereal/
+├── bot.py                 # Main bot application
+├── core/                  # Core functionality
+│   ├── config.py         # Configuration management
+│   ├── constants.py      # Bot constants
+│   └── logger.py         # Logging setup
+├── cogs/                 # Command modules
+│   ├── moderation.py     # Moderation commands
+│   ├── games.py          # Game commands
+│   ├── fun.py            # Fun commands
+│   └── utility.py        # Utility commands
+├── db/                   # Database layer
+│   ├── models.py         # SQLAlchemy models
+│   └── repository.py     # Data access layer
+├── tests/                # Unit tests
+├── scripts/              # Utility scripts
+└── docs/                 # Documentation
+```
+
+### 🤝 Contributing
+We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for detailed information on:
+- Development setup
+- Code standards
+- Testing guidelines
+- Pull request process
+
+### 📋 Development Features
+- **Slash Commands**: Modern Discord command system
+- **Database Integration**: SQLite with SQLAlchemy ORM
+- **Health Monitoring**: Built-in health check endpoints
+- **Docker Support**: Containerized deployment
+- **CI/CD Pipeline**: Automated testing and deployment
+- **Comprehensive Testing**: Unit and integration tests
+
+---
 
 ### CI/CD Pipeline
 
