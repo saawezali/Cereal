@@ -6,9 +6,7 @@ Cereal is a comprehensive Discord bot designed to make your server more engaging
 
 ## 🤖 Invite Cereal to Your Server
 
-[![Add to Discord](https://img.shields.io/badge/Add_to_Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/api/oauth2/authorize?client_id=YOUR_BOT_ID&permissions=8&scope=bot%20applications.commands)
-
-*Replace `YOUR_BOT_ID` in the URL above with your actual bot's client ID from the Discord Developer Portal.*
+[![Add to Discord](https://img.shields.io/badge/Add_to_Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/api/oauth2/authorize?client_id=1368984903559155833&permissions=8&scope=bot%20applications.commands)
 
 ## ✨ Features
 
