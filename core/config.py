@@ -24,7 +24,7 @@ class Config:
 
     # Bot Configuration
     BOT_PREFIX: str = os.getenv('BOT_PREFIX', '!')
-    BOT_STATUS: str = os.getenv('BOT_STATUS', '/help | Cereal Bot 🥣')
+    BOT_STATUS: str = os.getenv('BOT_STATUS', '/help | Cereal Bot')
     BOT_ACTIVITY_TYPE: str = os.getenv('BOT_ACTIVITY_TYPE', 'playing')  # playing, watching, listening
 
     # Logging Configuration
