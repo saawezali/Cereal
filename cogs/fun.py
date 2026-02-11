@@ -363,5 +363,38 @@ class Fun(commands.Cog):
                 ephemeral=True
             )
 
+    @app_commands.command(name='nope', description='Get a creative excuse to say no')
+    async def nope(self, interaction: discord.Interaction):
+        """Get a random excuse to say no using no-as-a-service"""
+        try:
+            async with self.session.get(
+                'https://naas.isalman.dev/no',
+                headers={'User-agent': 'Cereal Bot 1.0'}
+            ) as resp:
+                if resp.status == 200:
+                    data = await resp.json()
+                    reason = data.get('reason', 'I just can\'t right now.')
+
+                    embed = discord.Embed(
+                        title="❌ Nope!",
+                        description=reason,
+                        color=discord.Color.red()
+                    )
+                    embed.set_footer(text="Powered by no-as-a-service")
+
+                    await interaction.response.send_message(embed=embed)
+                else:
+                    await interaction.response.send_message(
+                        "❌ Couldn't get an excuse right now!",
+                        ephemeral=True
+                    )
+
+        except Exception as e:
+            print(f"Nope error: {e}")
+            await interaction.response.send_message(
+                "❌ Error getting excuse. Try again later.",
+                ephemeral=True
+            )
+
 async def setup(bot):
     await bot.add_cog(Fun(bot))
