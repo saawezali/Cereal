@@ -865,7 +865,7 @@ class Utility(commands.Cog):
     async def help_command(self, interaction: discord.Interaction):
         """Show help information"""
         embed = discord.Embed(
-            title="🥣 Cereal Bot Commands",
+            title="Cereal Bot Commands",
             description="Here are all available slash commands:",
             color=discord.Color.blue()
         )
