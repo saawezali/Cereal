@@ -1,3 +1,4 @@
+
 import discord
 from discord import app_commands
 from discord.ext import commands, tasks
@@ -7,6 +8,7 @@ import pytz
 import difflib
 import os
 import aiohttp
+from simpleeval import simple_eval, SimpleEval
 
 # Database imports
 from db import user_repo, guild_repo
@@ -510,22 +512,48 @@ class Utility(commands.Cog):
     @app_commands.command(name='calculate', description='Calculate a mathematical expression')
     @app_commands.describe(expression='The mathematical expression to calculate')
     async def calculate(self, interaction: discord.Interaction, expression: str):
-        """Calculate a mathematical expression"""
+        """Calculate a mathematical expression safely using simpleeval"""
         try:
-            # Remove any potentially dangerous characters
-            allowed_chars = '0123456789+-*/()%. '
+            allowed_chars = '0123456789+-*/()%. '^' '  # Only allow safe characters
             if not all(c in allowed_chars for c in expression):
                 return await interaction.response.send_message("❌ Invalid characters in expression!", ephemeral=True)
-            
-            result = eval(expression)
-            
+
+            # Limit expression length to prevent abuse
+            if len(expression) > 100:
+                return await interaction.response.send_message("❌ Expression too long! Limit: 100 characters.", ephemeral=True)
+
+            # Setup simpleeval with safe limits
+            s = SimpleEval()
+            s.max_power = 10_000_000  # Prevent huge exponents
+            s.max_string_length = 100  # Not really needed, but safe
+            s.max_collection_length = 100  # Not really needed, but safe
+            s.functions = {}  # No custom functions
+
+            # Evaluate with a timeout (asyncio)
+            async def run_eval():
+                return s.eval(expression)
+
+            try:
+                result = await asyncio.wait_for(asyncio.to_thread(run_eval), timeout=2.0)
+            except asyncio.TimeoutError:
+                return await interaction.response.send_message("❌ Calculation took too long!", ephemeral=True)
+            except Exception as e:
+                return await interaction.response.send_message(f"❌ Error calculating: {e}", ephemeral=True)
+
+            # Reject huge results
+            try:
+                if isinstance(result, (int, float)) and (abs(result) > 1e100):
+                    return await interaction.response.send_message("❌ Result too large!", ephemeral=True)
+            except Exception:
+                return await interaction.response.send_message("❌ Calculation error.", ephemeral=True)
+
             embed = discord.Embed(
                 title="🧮 Calculator",
                 color=discord.Color.blue()
             )
             embed.add_field(name="Expression", value=f"```{expression}```", inline=False)
             embed.add_field(name="Result", value=f"```{result}```", inline=False)
-            
+
             await interaction.response.send_message(embed=embed)
         except Exception as e:
             await interaction.response.send_message(f"❌ Error calculating: {e}", ephemeral=True)
@@ -747,9 +775,10 @@ class Utility(commands.Cog):
     @app_commands.command(name='calculate', description='Calculate mathematical expressions')
     @app_commands.describe(expression='Mathematical expression to evaluate (e.g., 2+2, sin(30), sqrt(16))')
     async def calculate(self, interaction: discord.Interaction, expression: str):
-        """Calculate mathematical expressions safely"""
+        """Calculate mathematical expressions safely with input/result/time limits"""
         import math
         import re
+        import asyncio
 
         # Security: Only allow safe mathematical operations
         allowed_functions = {
@@ -762,40 +791,64 @@ class Utility(commands.Cog):
             'pi': math.pi, 'e': math.e, 'tau': math.tau
         }
 
-        # Remove dangerous characters and functions
+        # Input length limit
+        if len(expression) > 100:
+            return await interaction.response.send_message("❌ Expression too long! Limit: 100 characters.", ephemeral=True)
+
+        # Remove dangerous characters (only allow safe math chars, numbers, letters, and , . ^)
         expression = re.sub(r'[^\w\s\+\-\*\/\(\)\.\,\^]', '', expression)
 
         # Replace ^ with ** for exponentiation
         expression = expression.replace('^', '**')
 
+        # Evaluate with a timeout (asyncio)
+        async def run_eval():
+            try:
+                return eval(expression, {"__builtins__": {}}, allowed_functions)
+            except Exception as e:
+                return e
+
         try:
-            # Evaluate the expression safely
-            result = eval(expression, {"__builtins__": {}}, allowed_functions)
+            result = await asyncio.wait_for(asyncio.to_thread(run_eval), timeout=2.0)
+        except asyncio.TimeoutError:
+            return await interaction.response.send_message("❌ Calculation took too long!", ephemeral=True)
 
-            # Format the result
-            if isinstance(result, float):
-                # Limit decimal places for readability
-                result_str = f"{result:.6f}".rstrip('0').rstrip('.')
-            else:
-                result_str = str(result)
+        # Handle errors from eval
+        if isinstance(result, Exception):
+            if isinstance(result, ZeroDivisionError):
+                return await interaction.response.send_message("❌ Cannot divide by zero!", ephemeral=True)
+            if isinstance(result, OverflowError):
+                return await interaction.response.send_message("❌ Result is too large!", ephemeral=True)
+            if isinstance(result, (SyntaxError, NameError, TypeError)):
+                return await interaction.response.send_message(f"❌ Invalid expression: {str(result)}", ephemeral=True)
+            return await interaction.response.send_message(f"❌ Calculation error: {str(result)}", ephemeral=True)
 
-            embed = discord.Embed(
-                title="🧮 Calculator",
-                color=discord.Color.blue()
-            )
-            embed.add_field(name="Expression", value=f"```{expression}```", inline=False)
-            embed.add_field(name="Result", value=f"```{result_str}```", inline=False)
+        # Reject huge results
+        try:
+            if isinstance(result, (int, float)) and (abs(result) > 1e100):
+                return await interaction.response.send_message("❌ Result too large!", ephemeral=True)
+        except Exception:
+            return await interaction.response.send_message("❌ Calculation error.", ephemeral=True)
 
-            await interaction.response.send_message(embed=embed)
+        # Format the result
+        if isinstance(result, float):
+            # Limit decimal places for readability
+            result_str = f"{result:.6f}".rstrip('0').rstrip('.')
+        else:
+            result_str = str(result)
 
-        except ZeroDivisionError:
-            await interaction.response.send_message("❌ Cannot divide by zero!", ephemeral=True)
-        except OverflowError:
-            await interaction.response.send_message("❌ Result is too large!", ephemeral=True)
-        except (SyntaxError, NameError, TypeError) as e:
-            await interaction.response.send_message(f"❌ Invalid expression: {str(e)}", ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message(f"❌ Calculation error: {str(e)}", ephemeral=True)
+        # Limit result length
+        if len(result_str) > 100:
+            return await interaction.response.send_message("❌ Result too long!", ephemeral=True)
+
+        embed = discord.Embed(
+            title="🧮 Calculator",
+            color=discord.Color.blue()
+        )
+        embed.add_field(name="Expression", value=f"```{expression}```", inline=False)
+        embed.add_field(name="Result", value=f"```{result_str}```", inline=False)
+
+        await interaction.response.send_message(embed=embed)
 
     @app_commands.command(name='say', description='Make the bot say something')
     @app_commands.describe(message='What the bot should say')
