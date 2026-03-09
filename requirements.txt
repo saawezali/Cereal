@@ -5,6 +5,7 @@ PyNaCl>=1.5.0
 pytz>=2024.1
 SQLAlchemy>=2.0
 aiosqlite
+simpleeval>=0.9.13
 
 # Development dependencies
 pytest>=7.0.0
