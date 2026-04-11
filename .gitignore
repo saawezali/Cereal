@@ -55,3 +55,5 @@ logs/
 # Lavalink
 Lavalink.jar
 application.yml
+
+venv/
