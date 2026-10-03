@@ -509,78 +509,6 @@ class Utility(commands.Cog):
         except Exception as e:
             await interaction.followup.send(f"❌ Error: {e}")
     
-    @app_commands.command(name='calculate', description='Calculate a mathematical expression')
-    @app_commands.describe(expression='The mathematical expression to calculate')
-    async def calculate(self, interaction: discord.Interaction, expression: str):
-        """Calculate a mathematical expression safely using simpleeval"""
-        try:
-            allowed_chars = '0123456789+-*/()%. '^' '  # Only allow safe characters
-            if not all(c in allowed_chars for c in expression):
-                return await interaction.response.send_message("❌ Invalid characters in expression!", ephemeral=True)
-
-            # Limit expression length to prevent abuse
-            if len(expression) > 100:
-                return await interaction.response.send_message("❌ Expression too long! Limit: 100 characters.", ephemeral=True)
-
-            # Setup simpleeval with safe limits
-            s = SimpleEval()
-            s.max_power = 10_000_000  # Prevent huge exponents
-            s.max_string_length = 100  # Not really needed, but safe
-            s.max_collection_length = 100  # Not really needed, but safe
-            s.functions = {}  # No custom functions
-
-            # Evaluate with a timeout (asyncio)
-            async def run_eval():
-                return s.eval(expression)
-
-            try:
-                result = await asyncio.wait_for(asyncio.to_thread(run_eval), timeout=2.0)
-            except asyncio.TimeoutError:
-                return await interaction.response.send_message("❌ Calculation took too long!", ephemeral=True)
-            except Exception as e:
-                return await interaction.response.send_message(f"❌ Error calculating: {e}", ephemeral=True)
-
-            # Reject huge results
-            try:
-                if isinstance(result, (int, float)) and (abs(result) > 1e100):
-                    return await interaction.response.send_message("❌ Result too large!", ephemeral=True)
-            except Exception:
-                return await interaction.response.send_message("❌ Calculation error.", ephemeral=True)
-
-            embed = discord.Embed(
-                title="🧮 Calculator",
-                color=discord.Color.blue()
-            )
-            embed.add_field(name="Expression", value=f"```{expression}```", inline=False)
-            embed.add_field(name="Result", value=f"```{result}```", inline=False)
-
-            await interaction.response.send_message(embed=embed)
-        except Exception as e:
-            await interaction.response.send_message(f"❌ Error calculating: {e}", ephemeral=True)
-    
-    @app_commands.command(name='say', description='Make the bot say something')
-    @app_commands.describe(message='The message for the bot to say')
-    @commands.has_permissions(manage_messages=True)
-    async def say(self, interaction: discord.Interaction, message: str):
-        """Make the bot say something"""
-        await interaction.response.send_message("✅ Message sent!", ephemeral=True)
-        await interaction.channel.send(message)
-    
-    @app_commands.command(name='embed', description='Create a custom embed')
-    @app_commands.describe(title='Embed title', description='Embed description')
-    @commands.has_permissions(manage_messages=True)
-    async def create_embed(self, interaction: discord.Interaction, title: str, description: str):
-        """Create a custom embed"""
-        embed = discord.Embed(
-            title=title,
-            description=description,
-            color=discord.Color.blue(),
-            timestamp=interaction.created_at
-        )
-        embed.set_footer(text=f"Created by {interaction.user.name}")
-        
-        await interaction.response.send_message(embed=embed)
-    
     async def timezone_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         """Autocomplete for timezone locations"""
         if not current:
@@ -778,9 +706,8 @@ class Utility(commands.Cog):
         """Calculate mathematical expressions safely with input/result/time limits"""
         import math
         import re
-        import asyncio
 
-        # Security: Only allow safe mathematical operations
+        # Security: only safe mathematical operations via SimpleEval (no eval())
         allowed_functions = {
             'sin': math.sin, 'cos': math.cos, 'tan': math.tan,
             'asin': math.asin, 'acos': math.acos, 'atan': math.atan,
@@ -788,40 +715,38 @@ class Utility(commands.Cog):
             'sqrt': math.sqrt, 'log': math.log, 'log10': math.log10,
             'exp': math.exp, 'pow': math.pow, 'abs': abs,
             'ceil': math.ceil, 'floor': math.floor, 'round': round,
-            'pi': math.pi, 'e': math.e, 'tau': math.tau
         }
+        allowed_names = {'pi': math.pi, 'e': math.e, 'tau': math.tau}
 
         # Input length limit
         if len(expression) > 100:
             return await interaction.response.send_message("❌ Expression too long! Limit: 100 characters.", ephemeral=True)
 
-        # Remove dangerous characters (only allow safe math chars, numbers, letters, and , . ^)
-        expression = re.sub(r'[^\w\s\+\-\*\/\(\)\.\,\^]', '', expression)
+        # Reject anything outside safe math characters before evaluation
+        if re.search(r'[^\w\s\+\-\*\/\(\)\.\,\^]', expression):
+            return await interaction.response.send_message("❌ Invalid characters in expression!", ephemeral=True)
 
         # Replace ^ with ** for exponentiation
         expression = expression.replace('^', '**')
 
         # Evaluate with a timeout (asyncio)
-        async def run_eval():
-            try:
-                return eval(expression, {"__builtins__": {}}, allowed_functions)
-            except Exception as e:
-                return e
+        def run_eval():
+            s = SimpleEval()
+            s.max_power = 10_000_000  # Prevent huge exponents
+            s.functions = allowed_functions
+            s.names = allowed_names
+            return s.eval(expression)
 
         try:
             result = await asyncio.wait_for(asyncio.to_thread(run_eval), timeout=2.0)
         except asyncio.TimeoutError:
             return await interaction.response.send_message("❌ Calculation took too long!", ephemeral=True)
-
-        # Handle errors from eval
-        if isinstance(result, Exception):
-            if isinstance(result, ZeroDivisionError):
-                return await interaction.response.send_message("❌ Cannot divide by zero!", ephemeral=True)
-            if isinstance(result, OverflowError):
-                return await interaction.response.send_message("❌ Result is too large!", ephemeral=True)
-            if isinstance(result, (SyntaxError, NameError, TypeError)):
-                return await interaction.response.send_message(f"❌ Invalid expression: {str(result)}", ephemeral=True)
-            return await interaction.response.send_message(f"❌ Calculation error: {str(result)}", ephemeral=True)
+        except ZeroDivisionError:
+            return await interaction.response.send_message("❌ Cannot divide by zero!", ephemeral=True)
+        except (SyntaxError, NameError, TypeError, ValueError, OverflowError) as e:
+            return await interaction.response.send_message(f"❌ Invalid expression: {e}", ephemeral=True)
+        except Exception as e:
+            return await interaction.response.send_message(f"❌ Calculation error: {e}", ephemeral=True)
 
         # Reject huge results
         try:
@@ -852,14 +777,17 @@ class Utility(commands.Cog):
 
     @app_commands.command(name='say', description='Make the bot say something')
     @app_commands.describe(message='What the bot should say')
+    @app_commands.default_permissions(manage_messages=True)
     async def say(self, interaction: discord.Interaction, message: str):
         """Make the bot say something"""
+        if not interaction.user.guild_permissions.manage_messages:
+            return await interaction.response.send_message("❌ You need Manage Messages permission!", ephemeral=True)
         # Delete the original command message for clean output
         try:
             await interaction.response.defer()
             await interaction.delete_original_response()
             await interaction.followup.send(message)
-        except:
+        except Exception:
             # If we can't delete, just send normally
             await interaction.response.send_message(message)
 
@@ -870,8 +798,11 @@ class Utility(commands.Cog):
         color='Hex color code (e.g., #FF0000) or color name',
         footer='Footer text'
     )
+    @app_commands.default_permissions(manage_messages=True)
     async def create_embed(self, interaction: discord.Interaction, title: str, description: str = None, color: str = None, footer: str = None):
         """Create a custom embed"""
+        if not interaction.user.guild_permissions.manage_messages:
+            return await interaction.response.send_message("❌ You need Manage Messages permission!", ephemeral=True)
         # Parse color
         embed_color = discord.Color.blue()  # Default
 
@@ -881,7 +812,7 @@ class Utility(commands.Cog):
                 # Hex color
                 try:
                     embed_color = discord.Color(int(color[1:], 16))
-                except:
+                except (ValueError, TypeError):
                     pass
             else:
                 # Named color

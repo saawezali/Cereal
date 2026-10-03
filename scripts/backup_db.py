@@ -59,7 +59,7 @@ def list_backups():
     print("Available backups:")
     for backup in sorted(backups, reverse=True):
         size = backup.stat().st_size / 1024  # Size in KB
-        print(".1f")
+        print(f"{backup.name} ({size:.1f} KB)")
 
 if __name__ == "__main__":
     import sys

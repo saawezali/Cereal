@@ -29,7 +29,7 @@ class User(Base):
     guild_memberships: Mapped[list["GuildMember"]] = relationship(back_populates="user")
 
     def __repr__(self):
-        return f"<User(id={self.id}, username='{self.username}', level={self.level})>"
+        return f"<User(id={self.id}, username='{self.username}', coins={self.coins})>"
 
 
 class Guild(Base):
