@@ -22,50 +22,44 @@ class Fun(commands.Cog):
     
     @app_commands.command(name='meme', description='Get a random meme from Reddit')
     async def meme(self, interaction: discord.Interaction):
-        """Get a random meme from Reddit"""
-        subreddits = ['darkjokes', 'shitpost','dankmemes', 'me_irl', 'funny','shitposting']
-        
-        # Try multiple times to get a valid image meme
+        """Get a random meme via meme-api (no auth required)"""
+        subreddits = ['memes', 'dankmemes', 'me_irl', 'funny']
+
+        # Try multiple times to get a valid meme
         for attempt in range(5):
             subreddit = random.choice(subreddits)
-            
+
             try:
                 async with self.session.get(
-                    f'https://www.reddit.com/r/{subreddit}/hot.json?limit=100',
-                    headers={'User-agent': 'Cereal Bot 1.0'}
+                    f'https://meme-api.com/gimme/{subreddit}',
+                    timeout=aiohttp.ClientTimeout(total=10)
                 ) as resp:
                     if resp.status != 200:
                         continue
-                    
+
                     data = await resp.json()
-                    posts = data['data']['children']
-                    
-                    # Filter for image posts only
-                    image_posts = [
-                        post['data'] for post in posts 
-                        if post['data'].get('post_hint') == 'image' 
-                        and not post['data'].get('over_18', False)
-                    ]
-                    
-                    if not image_posts:
+
+                    # Skip NSFW posts and entries without an image URL
+                    if data.get('nsfw'):
                         continue
-                    
-                    post = random.choice(image_posts)
-                    
+                    url = data.get('url')
+                    if not url:
+                        continue
+
                     embed = discord.Embed(
-                        title=post['title'][:256],  # Discord limit
+                        title=data.get('title', 'Meme')[:256],  # Discord limit
                         color=discord.Color.random(),
-                        url=f"https://reddit.com{post['permalink']}"
+                        url=data.get('postLink')
                     )
-                    embed.set_image(url=post['url'])
-                    embed.set_footer(text=f"👍 {post['ups']} | r/{subreddit}")
-                    
+                    embed.set_image(url=url)
+                    embed.set_footer(text=f"👍 {data.get('ups', 0)} | r/{data.get('subreddit', subreddit)}")
+
                     return await interaction.response.send_message(embed=embed)
-                    
+
             except Exception as e:
                 print(f"Meme error attempt {attempt + 1}: {e}")
                 continue
-        
+
         await interaction.response.send_message("❌ Couldn't fetch a meme right now. Try again!", ephemeral=True)
     
     @app_commands.command(name='dadjoke', description='Get a random dad joke')

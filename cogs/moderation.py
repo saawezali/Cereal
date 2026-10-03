@@ -19,6 +19,8 @@ class Moderation(commands.Cog):
     @commands.bot_has_permissions(kick_members=True)
     async def kick(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
         """Kick a member from the server"""
+        if interaction.guild is None or not interaction.user.guild_permissions.kick_members:
+            return await interaction.response.send_message("❌ You need Kick Members permission!", ephemeral=True)
         if member.top_role >= interaction.user.top_role:
             return await interaction.response.send_message("❌ You cannot kick someone with equal or higher role!", ephemeral=True)
         
@@ -48,6 +50,8 @@ class Moderation(commands.Cog):
     @commands.bot_has_permissions(ban_members=True)
     async def ban(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
         """Ban a member from the server"""
+        if interaction.guild is None or not interaction.user.guild_permissions.ban_members:
+            return await interaction.response.send_message("❌ You need Ban Members permission!", ephemeral=True)
         if member.top_role >= interaction.user.top_role:
             return await interaction.response.send_message("❌ You cannot ban someone with equal or higher role!", ephemeral=True)
         
@@ -76,6 +80,8 @@ class Moderation(commands.Cog):
     @app_commands.default_permissions(ban_members=True)
     async def unban(self, interaction: discord.Interaction, user_id: str):
         """Unban a member by their ID"""
+        if interaction.guild is None or not interaction.user.guild_permissions.ban_members:
+            return await interaction.response.send_message("❌ You need Ban Members permission!", ephemeral=True)
         try:
             user_id_int = int(user_id)
             user = await self.bot.fetch_user(user_id_int)
@@ -96,6 +102,8 @@ class Moderation(commands.Cog):
     @commands.bot_has_permissions(moderate_members=True)
     async def mute(self, interaction: discord.Interaction, member: discord.Member, duration: int = 60, reason: str = None):
         """Timeout a member (duration in minutes, max 40320)"""
+        if interaction.guild is None or not interaction.user.guild_permissions.moderate_members:
+            return await interaction.response.send_message("❌ You need Moderate Members permission!", ephemeral=True)
         if member.top_role >= interaction.user.top_role:
             return await interaction.response.send_message("❌ You cannot mute someone with equal or higher role!", ephemeral=True)
         
@@ -128,6 +136,8 @@ class Moderation(commands.Cog):
     @commands.bot_has_permissions(moderate_members=True)
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
         """Remove timeout from a member"""
+        if interaction.guild is None or not interaction.user.guild_permissions.moderate_members:
+            return await interaction.response.send_message("❌ You need Moderate Members permission!", ephemeral=True)
         try:
             await member.timeout(None)
             await interaction.response.send_message(f"✅ {member.mention} has been unmuted")
@@ -142,6 +152,8 @@ class Moderation(commands.Cog):
     @commands.bot_has_permissions(manage_messages=True)
     async def clear(self, interaction: discord.Interaction, amount: int = 10):
         """Delete messages from the channel (max 100)"""
+        if interaction.guild is None or not interaction.user.guild_permissions.manage_messages:
+            return await interaction.response.send_message("❌ You need Manage Messages permission!", ephemeral=True)
         if amount > 100:
             return await interaction.response.send_message("❌ Cannot delete more than 100 messages at once", ephemeral=True)
         
@@ -164,6 +176,8 @@ class Moderation(commands.Cog):
     @app_commands.default_permissions(moderate_members=True)
     async def warn(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
         """Warn a member and store in database"""
+        if interaction.guild is None or not interaction.user.guild_permissions.moderate_members:
+            return await interaction.response.send_message("❌ You need Moderate Members permission!", ephemeral=True)
         # Check permissions
         if member.id == interaction.user.id:
             return await interaction.response.send_message("❌ You cannot warn yourself!", ephemeral=True)
@@ -291,6 +305,8 @@ class Moderation(commands.Cog):
     @app_commands.default_permissions(administrator=True)
     async def clear_warnings(self, interaction: discord.Interaction, member: discord.Member):
         """Clear all warnings for a member (admin only)"""
+        if interaction.guild is None or not interaction.user.guild_permissions.administrator:
+            return await interaction.response.send_message("❌ You need Administrator permission!", ephemeral=True)
         try:
             # Delete all warnings for this user in this guild
             deleted_count = await warning_repo.delete(
@@ -319,6 +335,8 @@ class Moderation(commands.Cog):
     @commands.bot_has_permissions(manage_channels=True)
     async def slowmode(self, interaction: discord.Interaction, seconds: int = 0):
         """Set slowmode for the current channel"""
+        if interaction.guild is None or not interaction.user.guild_permissions.manage_channels:
+            return await interaction.response.send_message("❌ You need Manage Channels permission!", ephemeral=True)
         if seconds > 21600:
             return await interaction.response.send_message("❌ Slowmode cannot exceed 6 hours (21600 seconds)", ephemeral=True)
         
