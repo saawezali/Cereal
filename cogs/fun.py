@@ -23,7 +23,7 @@ class Fun(commands.Cog):
     @app_commands.command(name='meme', description='Get a random meme from Reddit')
     async def meme(self, interaction: discord.Interaction):
         """Get a random meme via meme-api (no auth required)"""
-        subreddits = ['memes', 'dankmemes', 'me_irl', 'funny']
+        subreddits = ['memes', 'dankmemes', 'me_irl', 'darkmemers', 'HistoryMemes']
 
         # Try multiple times to get a valid meme
         for attempt in range(5):
@@ -40,8 +40,8 @@ class Fun(commands.Cog):
                     data = await resp.json()
 
                     # Skip NSFW posts and entries without an image URL
-                    if data.get('nsfw'):
-                        continue
+                    # if data.get('nsfw'):
+                    #     continue
                     url = data.get('url')
                     if not url:
                         continue

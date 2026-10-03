@@ -48,7 +48,8 @@ class CerealBot(commands.Bot):
             'cogs.moderation',
             'cogs.games',
             'cogs.fun',
-            'cogs.utility'
+            'cogs.utility',
+            'cogs.owner'
         ]
 
         for cog in cogs:

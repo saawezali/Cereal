@@ -854,9 +854,11 @@ class Utility(commands.Cog):
             color=discord.Color.blue()
         )
         
-        # Get all slash commands
+        # Get all slash commands (Owner cog is private — never listed)
         commands = []
         for cog_name, cog in self.bot.cogs.items():
+            if cog_name == "Owner":
+                continue
             cog_commands = []
             for command in cog.get_app_commands():
                 cog_commands.append(f"`/{command.name}` - {command.description or 'No description'}")
