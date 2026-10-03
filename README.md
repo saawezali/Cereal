@@ -53,10 +53,10 @@ Helpful tools for server management and daily use:
 
 | Category | Commands |
 |----------|----------|
-| **Moderation** | kick, ban, mute, warn, clear, slowmode |
-| **Games** | truthordare, wouldyourather, 8ball, rps, flip, roll |
-| **Fun** | meme, dadjoke, roast, compliment, ship, avatar |
-| **Utility** | remind, poll, timer, weather, timezone, ping |
+| **Moderation** | kick, ban, unban, mute, unmute, clear, warn, warnings, clear_warnings, slowmode |
+| **Games** | truthordare, wouldyourather, neverhaveiever, 8ball, rps, flip, roll |
+| **Fun** | meme, dadjoke, fact, quote, joke, nope, roast, compliment, ship, avatar, userinfo, serverinfo |
+| **Utility** | remind, reminders, poll, afk, ping, suggest, timer, calculate, say, embed, timezone, weather, help |
 
 ## ⚙️ Setup & Permissions
 
@@ -64,7 +64,8 @@ Helpful tools for server management and daily use:
 - **Send Messages** - To respond to commands
 - **Use Slash Commands** - For all bot interactions
 - **Embed Links** - For rich message formatting
-- **Read Message History** - For context-aware commands
+- **Read Message History** - For message cleanup and AFK detection
+- **Message Content** - For AFK detection and owner text commands (privileged intent, enable in Developer Portal)
 
 ### Optional Permissions (for full functionality):
 - **Manage Messages** - For moderation commands
@@ -173,7 +174,8 @@ Cereal/
 │   ├── moderation.py     # Moderation commands
 │   ├── games.py          # Game commands
 │   ├── fun.py            # Fun commands
-│   └── utility.py        # Utility commands
+│   ├── utility.py        # Utility commands
+│   └── owner.py          # Owner-only private commands
 ├── db/                   # Database layer
 │   ├── models.py         # SQLAlchemy models
 │   └── repository.py     # Data access layer
@@ -195,7 +197,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 - **Health Monitoring**: Built-in health check endpoints
 - **Docker Support**: Containerized deployment
 - **CI/CD Pipeline**: Automated testing and deployment
-- **Comprehensive Testing**: Unit and integration tests
+- **Basic Testing**: Unit tests with pytest
 
 ---
 
@@ -222,10 +224,10 @@ The project includes GitHub Actions for automated testing:
 - [x] API integration for dynamic content (completed)
 - [x] Database integration (SQLite) (completed)
 - [x] XP system removal (completed)
-- [ ] Unit tests and integration tests
-- [ ] Docker containerization
-- [ ] CI/CD pipeline (GitHub Actions)
-- [ ] Health check endpoints
+- [ ] Unit tests and integration tests (basic tests only)
+- [x] Docker containerization (completed)
+- [x] CI/CD pipeline (GitHub Actions) (completed)
+- [x] Health check endpoints (completed)
 - [ ] Database migrations system
 - [ ] Error monitoring (Sentry)
 - [ ] Auto-moderation (spam filter, bad word filter)
