@@ -1014,7 +1014,8 @@ class Utility(commands.Cog):
                     'purple': discord.Color.purple(),
                     'pink': discord.Color.pink(),
                     'gold': discord.Color.gold(),
-                    'gray': discord.Color.gray(),
+                    'gray': discord.Color.light_grey(),
+                    'grey': discord.Color.light_grey(),
                     'black': discord.Color.from_rgb(0, 0, 0),
                     'white': discord.Color.from_rgb(255, 255, 255)
                 }
