@@ -24,7 +24,6 @@ class Colors:
     MODERATION = discord.Color.dark_red()
     GAMES = discord.Color.gold()
     UTILITY = discord.Color.teal()
-    AI = discord.Color.blurple()
 
 # Emojis
 class Emojis:
@@ -104,34 +103,6 @@ class APIs:
     # JOKE_API = "https://v2.jokeapi.dev"
     pass
 
-# AI Constants
-class AI:
-    """Constants for AI-powered features"""
-    # Model identifiers (Groq)
-    CHAT_MODEL = "llama-3.3-70b-versatile"
-    SUMMARY_MODEL = "llama-3.3-70b-versatile"
-
-    # Token limits
-    CHAT_MAX_TOKENS = 512
-    SUMMARY_MAX_TOKENS = 700
-
-    # Temperature
-    CHAT_TEMPERATURE = 0.7
-    SUMMARY_TEMPERATURE = 0.3
-
-    # Context & fetch limits
-    MAX_CONTEXT_MESSAGES = 10       # recent messages for /ask context
-    MAX_SUMMARY_MESSAGES = 200     # upper limit for /summarize
-    DEFAULT_SUMMARY_MESSAGES = 50  # default count for /summarize
-
-    # Retry configuration
-    MAX_RETRIES = 3
-    BASE_RETRY_DELAY = 1.0         # seconds
-    MAX_RETRY_DELAY = 10.0         # seconds
-
-    # Chunking
-    CHUNK_MAX_CHARS = 12000        # ~3000 tokens per chunk
-
 # Game Constants
 class Games:
     """Constants for game features"""
@@ -202,11 +173,6 @@ COMMAND_CATEGORIES = {
         "name": "Utility",
         "description": "Useful utility commands",
         "emoji": Emojis.INFO
-    },
-    "ai": {
-        "name": "AI",
-        "description": "AI-powered smart commands",
-        "emoji": Emojis.THINK
     }
 }
 

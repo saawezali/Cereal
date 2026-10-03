@@ -11,9 +11,6 @@ from core import config, setup_logging, get_logger
 # Database imports
 from db import init_db, close_db, initialize_repositories
 
-# AI service import
-from services.ai_service import ai_service
-
 # Setup logging
 setup_logging()
 logger = get_logger(__name__)
@@ -46,20 +43,12 @@ class CerealBot(commands.Bot):
         await initialize_repositories()
         logger.info('✓ Repositories ready')
 
-        # Initialize AI service
-        ai_service.initialize()
-        if ai_service.is_ready:
-            logger.info('✓ AI service ready')
-        else:
-            logger.warning('⚠ AI service not configured — AI commands will be unavailable')
-
         # Load cogs
         cogs = [
             'cogs.moderation',
             'cogs.games',
             'cogs.fun',
-            'cogs.utility',
-            'cogs.ai'
+            'cogs.utility'
         ]
 
         for cog in cogs:

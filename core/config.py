@@ -36,7 +36,6 @@ class Config:
     # API Keys (add as needed)
     WEATHER_API_KEY: Optional[str] = os.getenv('WEATHER_API_KEY')
     JOKE_API_KEY: Optional[str] = os.getenv('JOKE_API_KEY')
-    GROQ_API_KEY: Optional[str] = os.getenv('GROQ_API_KEY')
 
     # Feature Flags
     ENABLE_XP_SYSTEM: bool = os.getenv('ENABLE_XP_SYSTEM', 'true').lower() == 'true'
