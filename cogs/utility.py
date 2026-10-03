@@ -13,6 +13,9 @@ from simpleeval import simple_eval, SimpleEval
 # Database imports
 from db import user_repo, guild_repo
 
+# Help menu metadata (category names, colors, timeout)
+from core.constants import BOT_VERSION, COMMAND_CATEGORIES, Colors, Pagination
+
 # Comprehensive timezone mappings
 TIMEZONE_MAP = {
     # === ASIA ===
@@ -217,6 +220,192 @@ DISPLAY_MAP = {
     'japan standard time': 'JST(Japan Standard Time)', 'korea standard time': 'KST(Korea Standard Time)', 'indian standard time': 'IST(Indian Standard Time)',
     'australian eastern standard time': 'AEST(Australian Eastern Standard Time)', 'australian central standard time': 'ACST(Australian Central Standard Time)', 'australian western standard time': 'AWST(Australian Western Standard Time)',
 }
+
+# Help menu categories in display order (Owner is never listed)
+HELP_CATEGORIES = ("moderation", "games", "fun", "utility")
+
+HELP_CATEGORY_COLORS = {
+    "moderation": Colors.MODERATION,
+    "games": Colors.GAMES,
+    "fun": Colors.FUN,
+    "utility": Colors.UTILITY,
+}
+
+
+def _help_cog_for(bot, category_key):
+    """Find the cog backing a help category (case-insensitive)."""
+    for cog_name, cog in bot.cogs.items():
+        if cog_name.lower() == category_key:
+            return cog
+    return None
+
+
+def _help_all_commands(bot):
+    """All visible slash commands as (category_key, command) pairs, sorted by name."""
+    pairs = []
+    for key in HELP_CATEGORIES:
+        cog = _help_cog_for(bot, key)
+        if cog is None:
+            continue
+        for cmd in sorted(cog.get_app_commands(), key=lambda c: c.name):
+            pairs.append((key, cmd))
+    return pairs
+
+
+def _help_usage(cmd):
+    """Short usage line, e.g. /roll dice or /remind <time> <message>."""
+    parts = []
+    for p in cmd.parameters:
+        parts.append(f"<{p.name}>" if p.required else f"[{p.name}]")
+    return f"/{cmd.name} {' '.join(parts)}".strip()
+
+
+def _help_home_embed(bot):
+    """Overview embed listing every category with its commands."""
+    pairs = _help_all_commands(bot)
+    by_category = {}
+    for key, cmd in pairs:
+        by_category.setdefault(key, []).append(cmd)
+
+    embed = discord.Embed(
+        title="Cereal Bot Commands",
+        description=(
+            f"{len(pairs)} slash commands across {len(by_category)} categories. "
+            "Pick a category below, or jump straight to one command."
+        ),
+        color=discord.Color.blue()
+    )
+
+    for key in HELP_CATEGORIES:
+        cmds = by_category.get(key, [])
+        if not cmds:
+            continue
+        meta = COMMAND_CATEGORIES[key]
+        names = ", ".join(f"`/{c.name}`" for c in cmds)
+        embed.add_field(
+            name=f"{meta['name']} ({len(cmds)})",
+            value=f"{meta['description']}\n{names}",
+            inline=False
+        )
+
+    embed.set_footer(text=f"Cereal Bot v{BOT_VERSION} | Use /help command:name for details")
+    return embed
+
+
+def _help_category_embed(bot, category_key):
+    """Embed for one category. Returns None for unknown keys."""
+    if category_key not in HELP_CATEGORIES:
+        return None
+    cog = _help_cog_for(bot, category_key)
+    if cog is None:
+        return None
+
+    meta = COMMAND_CATEGORIES[category_key]
+    cmds = sorted(cog.get_app_commands(), key=lambda c: c.name)
+
+    embed = discord.Embed(
+        title=f"{meta['name']} Commands",
+        description=meta["description"],
+        color=HELP_CATEGORY_COLORS[category_key]
+    )
+
+    for cmd in cmds:
+        value = cmd.description or "No description."
+        if cmd.parameters:
+            value += f"\nUsage: `{_help_usage(cmd)}`"
+        embed.add_field(name=f"/{cmd.name}", value=value, inline=False)
+
+    embed.set_footer(text=f"{len(cmds)} commands | Use /help command:name for details")
+    return embed
+
+
+def _help_detail_embed(bot, name):
+    """Detail card for one command. Returns None when not found."""
+    for key, cmd in _help_all_commands(bot):
+        if cmd.name == name:
+            meta = COMMAND_CATEGORIES[key]
+            embed = discord.Embed(
+                title=f"/{cmd.name}",
+                description=cmd.description or "No description.",
+                color=HELP_CATEGORY_COLORS[key]
+            )
+            embed.add_field(name="Category", value=meta["name"], inline=True)
+            embed.add_field(name="Usage", value=f"`{_help_usage(cmd)}`", inline=False)
+            if cmd.parameters:
+                lines = []
+                for p in cmd.parameters:
+                    req = "required" if p.required else "optional"
+                    ptype = getattr(p.type, "name", str(p.type))
+                    lines.append(f"`{p.name}` ({ptype}, {req}) - {p.description or 'No description.'}")
+                embed.add_field(name="Parameters", value="\n".join(lines)[:1024], inline=False)
+            else:
+                embed.add_field(name="Parameters", value="None.", inline=False)
+            embed.set_footer(text=f"Cereal Bot v{BOT_VERSION}")
+            return embed
+    return None
+
+
+class HelpSelect(discord.ui.Select):
+    """Category picker for the help menu."""
+
+    def __init__(self, bot):
+        self.bot = bot
+        options = [
+            discord.SelectOption(
+                label="Home",
+                value="home",
+                description="Overview of all categories"
+            )
+        ]
+        for key in HELP_CATEGORIES:
+            meta = COMMAND_CATEGORIES[key]
+            cog = _help_cog_for(bot, key)
+            count = len(cog.get_app_commands()) if cog else 0
+            options.append(
+                discord.SelectOption(
+                    label=f"{meta['name']} ({count})",
+                    value=key,
+                    description=meta["description"][:100]
+                )
+            )
+        super().__init__(placeholder="Choose a category", min_values=1, max_values=1, options=options)
+
+    async def callback(self, interaction: discord.Interaction):
+        value = self.values[0]
+        if value == "home":
+            embed = _help_home_embed(self.bot)
+        else:
+            embed = _help_category_embed(self.bot, value)
+        await interaction.response.edit_message(embed=embed, view=self.view)
+
+
+class HelpView(discord.ui.View):
+    """Interactive wrapper for the help menu (owner: invoking user only)."""
+
+    def __init__(self, bot, user_id: int):
+        super().__init__(timeout=Pagination.EMBED_TIMEOUT)
+        self.bot = bot
+        self.user_id = user_id
+        self.message = None
+        self.add_item(HelpSelect(bot))
+
+    async def interaction_check(self, interaction: discord.Interaction) -> bool:
+        if interaction.user.id != self.user_id:
+            await interaction.response.send_message(
+                "Only the person who ran /help can use this menu.", ephemeral=True
+            )
+            return False
+        return True
+
+    async def on_timeout(self) -> None:
+        for child in self.children:
+            child.disabled = True
+        if self.message is not None:
+            try:
+                await self.message.edit(view=self)
+            except discord.HTTPException:
+                pass
+
 
 class Utility(commands.Cog):
     """Utility commands including reminders"""
@@ -845,30 +1034,41 @@ class Utility(commands.Cog):
 
         await interaction.response.send_message(embed=embed)
 
+    async def help_command_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        """Autocomplete command names for /help."""
+        pairs = _help_all_commands(self.bot)
+        if not current:
+            picks = pairs[:25]
+        else:
+            lowered = current.lower()
+            picks = [(k, c) for k, c in pairs if lowered in c.name][:25]
+        return [
+            app_commands.Choice(name=f"/{c.name} - {(c.description or 'No description')[:60]}", value=c.name)
+            for _, c in picks
+        ]
+
     @app_commands.command(name='help', description='Show available commands')
-    async def help_command(self, interaction: discord.Interaction):
-        """Show help information"""
-        embed = discord.Embed(
-            title="Cereal Bot Commands",
-            description="Here are all available slash commands:",
-            color=discord.Color.blue()
-        )
-        
-        # Get all slash commands (Owner cog is private — never listed)
-        commands = []
-        for cog_name, cog in self.bot.cogs.items():
-            if cog_name == "Owner":
-                continue
-            cog_commands = []
-            for command in cog.get_app_commands():
-                cog_commands.append(f"`/{command.name}` - {command.description or 'No description'}")
-            if cog_commands:
-                commands.append(f"**{cog_name}**\n" + "\n".join(cog_commands))
-        
-        embed.description += "\n\n" + "\n\n".join(commands)
-        
-        embed.set_footer(text="Use /command to run commands")
-        await interaction.response.send_message(embed=embed)
+    @app_commands.describe(command='Jump straight to one command (optional)')
+    @app_commands.autocomplete(command=help_command_autocomplete)
+    async def help_command(self, interaction: discord.Interaction, command: str = None):
+        """Show help information with an interactive category menu"""
+        view = HelpView(self.bot, interaction.user.id)
+
+        if command:
+            embed = _help_detail_embed(self.bot, command.strip().lower())
+            if embed is None:
+                return await interaction.response.send_message(
+                    f"No command named '{command}'. Pick one from the list instead.",
+                    ephemeral=True
+                )
+            await interaction.response.send_message(embed=embed, view=view)
+        else:
+            await interaction.response.send_message(embed=_help_home_embed(self.bot), view=view)
+
+        try:
+            view.message = await interaction.original_response()
+        except discord.HTTPException:
+            pass
 
 async def setup(bot):
     await bot.add_cog(Utility(bot))
