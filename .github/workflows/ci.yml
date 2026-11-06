@@ -37,14 +37,12 @@ jobs:
     - name: Run tests
       run: |
         python -m pytest tests/ -v --tb=short
-      continue-on-error: true  # Don't fail on test failures for now
 
     - name: Check code quality
       run: |
         pip install flake8
         flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      continue-on-error: true
 
   deploy:
     needs: test

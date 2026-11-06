@@ -113,6 +113,9 @@ class Moderation(commands.Cog):
         if member.id == interaction.client.user.id:
             return await interaction.response.send_message("❌ I cannot mute myself!", ephemeral=True)
         
+        if duration < 1:
+            return await interaction.response.send_message("❌ Duration must be at least 1 minute!", ephemeral=True)
+        
         if duration > 40320:
             return await interaction.response.send_message("❌ Duration cannot exceed 40320 minutes (28 days)!", ephemeral=True)
         
@@ -127,8 +130,8 @@ class Moderation(commands.Cog):
             embed.add_field(name="Reason", value=reason or "No reason provided")
             embed.add_field(name="Moderator", value=interaction.user.mention)
             await interaction.response.send_message(embed=embed)
-        except Exception as e:
-            await interaction.response.send_message(f"❌ Error: {e}", ephemeral=True)
+        except Exception:
+            await interaction.response.send_message("❌ Couldn't mute this member. Try again later.", ephemeral=True)
     
     @app_commands.command(name='unmute', description='Remove timeout from a member')
     @app_commands.describe(member='The member to unmute')
@@ -143,8 +146,8 @@ class Moderation(commands.Cog):
             await interaction.response.send_message(f"✅ {member.mention} has been unmuted")
         except discord.Forbidden:
             await interaction.response.send_message("❌ I don't have permission to unmute this member!", ephemeral=True)
-        except Exception as e:
-            await interaction.response.send_message(f"❌ Error: {e}", ephemeral=True)
+        except Exception:
+            await interaction.response.send_message("❌ Couldn't unmute this member. Try again later.", ephemeral=True)
     
     @app_commands.command(name='clear', description='Delete messages from the channel')
     @app_commands.describe(amount='Number of messages to delete (max 100)')
@@ -163,7 +166,11 @@ class Moderation(commands.Cog):
         try:
             await interaction.response.defer(ephemeral=True)
             
-            deleted = await interaction.channel.purge(limit=amount)
+            deleted = await interaction.channel.purge(
+                limit=amount,
+                # Never purge pinned messages
+                check=lambda m: not m.pinned
+            )
             
             await interaction.followup.send(f"🗑️ Deleted {len(deleted)} messages", ephemeral=True)
         except discord.Forbidden:
@@ -253,8 +260,15 @@ class Moderation(commands.Cog):
 
     @app_commands.command(name='warnings', description='View warnings for a member')
     @app_commands.describe(member='The member to check warnings for (leave empty for yourself)')
+    @app_commands.default_permissions(moderate_members=True)
     async def warnings(self, interaction: discord.Interaction, member: discord.Member = None):
-        """View warning history for a member"""
+        """View warning history for a member (other members: moderators only)"""
+        # Viewing someone else's moderation record requires perms; your own is fine
+        if member and (interaction.guild is None or not interaction.user.guild_permissions.moderate_members):
+            return await interaction.response.send_message(
+                "❌ You need Moderate Members permission to view other members' warnings!",
+                ephemeral=True
+            )
         target_user = member or interaction.user
 
         try:

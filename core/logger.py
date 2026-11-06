@@ -175,20 +175,17 @@ def setup_logging():
 # Convenience functions
 def log_command(user: str, command: str, guild: Optional[str] = None, **kwargs):
     """Log command usage"""
-    global _logger_instance
     if _logger_instance:
         _logger_instance.log_command(user, command, guild, **kwargs)
 
 
 def log_error(error: Exception, context: Optional[str] = None, **kwargs):
     """Log errors with context"""
-    global _logger_instance
     if _logger_instance:
         _logger_instance.log_error(error, context, **kwargs)
 
 
 def log_db_operation(operation: str, table: str, **kwargs):
     """Log database operations"""
-    global _logger_instance
     if _logger_instance:
         _logger_instance.log_database_operation(operation, table, **kwargs)

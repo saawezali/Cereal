@@ -414,6 +414,7 @@ class Utility(commands.Cog):
         self.bot = bot
         self.reminders = []  # Will store: (user_id, channel_id, time, message)
         self.afk_users = {}  # Store AFK users: {user_id: reason}
+        self.timer_counts = {}  # Active timer count per user (resource guard)
         self.session = None  # aiohttp session for API calls
         self.check_reminders.start()
     
@@ -451,7 +452,12 @@ class Utility(commands.Cog):
                         )
                         embed.set_footer(text=f"Reminder for {user.name}")
                         
-                        await channel.send(f"{user.mention}", embed=embed)
+                        await channel.send(
+                            f"{user.mention}",
+                            embed=embed,
+                            # Opt back in to pinging for reminders specifically
+                            allowed_mentions=discord.AllowedMentions(users=True)
+                        )
                     
                     reminders_to_remove.append(reminder)
                 except Exception as e:
@@ -492,6 +498,14 @@ class Utility(commands.Cog):
                 return await interaction.response.send_message("❌ Reminder must be at least 10 seconds!", ephemeral=True)
             if seconds > 2592000:  # 30 days
                 return await interaction.response.send_message("❌ Reminder cannot be longer than 30 days!", ephemeral=True)
+            
+            # Per-user cap to prevent memory/resource exhaustion
+            user_reminder_count = sum(1 for r in self.reminders if r[0] == interaction.user.id)
+            if user_reminder_count >= 10:
+                return await interaction.response.send_message(
+                    "❌ You already have 10 active reminders! Wait for one to complete.",
+                    ephemeral=True
+                )
             
             remind_time = datetime.now() + timedelta(seconds=seconds)
             
@@ -596,18 +610,19 @@ class Utility(commands.Cog):
             reason = self.afk_users.pop(message.author.id)
             await message.channel.send(
                 f"Welcome back {message.author.mention}! You were AFK: {reason}",
-                delete_after=5
+                delete_after=5,
+                allowed_mentions=discord.AllowedMentions(users=[message.author])
             )
         
-        # Check if AFK user was mentioned
-        for user_id in self.afk_users:
-            user = self.bot.get_user(user_id)
-            if user and user.mentioned_in(message):
-                reason = self.afk_users[user_id]
-                await message.channel.send(
-                    f"💤 {user.display_name} is currently AFK: {reason}",
-                    delete_after=10
-                )
+        # Check if AFK users were mentioned (batched, capped to prevent spam)
+        mentioned_afk = [u for u in message.mentions if u.id in self.afk_users][:5]
+        if mentioned_afk:
+            note = " (and more)" if len(list(message.mentions)) > 5 else ""
+            lines = [
+                f"💤 {user.display_name} is currently AFK: {self.afk_users[user.id]}"
+                for user in mentioned_afk
+            ]
+            await message.channel.send("\n".join(lines) + note, delete_after=10)
     
     @app_commands.command(name='ping', description='Check bot latency')
     async def ping(self, interaction: discord.Interaction):
@@ -664,6 +679,14 @@ class Utility(commands.Cog):
             if seconds > 86400:  # 24 hours
                 return await interaction.response.send_message("❌ Timer cannot exceed 24 hours!", ephemeral=True)
             
+            # Per-user cap so timers can't be spammed (each parks a coroutine for up to 24h)
+            if self.timer_counts.get(interaction.user.id, 0) >= 5:
+                return await interaction.response.send_message(
+                    "❌ You already have 5 active timers! Wait for one to finish.",
+                    ephemeral=True
+                )
+            self.timer_counts[interaction.user.id] = self.timer_counts.get(interaction.user.id, 0) + 1
+            
             # Format display time
             if seconds < 60:
                 display_time = f"{seconds} second{'s' if seconds != 1 else ''}"
@@ -682,7 +705,13 @@ class Utility(commands.Cog):
             await interaction.response.send_message(embed=embed)
             msg = await interaction.original_response()
             
-            await asyncio.sleep(seconds)
+            try:
+                await asyncio.sleep(seconds)
+            finally:
+                # Always release the per-user timer slot
+                self.timer_counts[interaction.user.id] -= 1
+                if self.timer_counts[interaction.user.id] <= 0:
+                    del self.timer_counts[interaction.user.id]
             
             embed = discord.Embed(
                 title="⏰ Timer Complete!",
@@ -691,12 +720,15 @@ class Utility(commands.Cog):
             )
             
             await msg.edit(embed=embed)
-            await interaction.followup.send(f"{interaction.user.mention} ⏰ Time's up!")
+            await interaction.followup.send(
+                f"{interaction.user.mention} ⏰ Time's up!",
+                allowed_mentions=discord.AllowedMentions(users=[interaction.user])
+            )
             
         except ValueError:
             await interaction.response.send_message("❌ Invalid time format! Use: 10s, 5m, or 2h\nExample: `/timer time:30s`", ephemeral=True)
-        except Exception as e:
-            await interaction.followup.send(f"❌ Error: {e}")
+        except Exception:
+            await interaction.followup.send("❌ Something went wrong with the timer! Try again later.")
     
     async def timezone_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         """Autocomplete for timezone locations"""
@@ -778,8 +810,8 @@ class Utility(commands.Cog):
             
             await interaction.response.send_message(embed=embed)
             
-        except Exception as e:
-            await interaction.response.send_message(f"❌ Error getting timezone: {e}", ephemeral=True)
+        except Exception:
+            await interaction.response.send_message("❌ Error getting timezone. Try another location!", ephemeral=True)
 
     @app_commands.command(name='weather', description='Get weather information for a city')
     @app_commands.describe(city='City name to get weather for')
@@ -794,9 +826,13 @@ class Utility(commands.Cog):
             )
 
         try:
-            # Get coordinates first
-            geo_url = f"http://api.openweathermap.org/geo/1.0/direct?q={city}&limit=1&appid={api_key}"
-            async with self.session.get(geo_url) as resp:
+            # Get coordinates first (params= encodes city input properly;
+            # HTTPS keeps the API key off the wire in plaintext)
+            geo_url = "https://api.openweathermap.org/geo/1.0/direct"
+            async with self.session.get(
+                geo_url,
+                params={'q': city, 'limit': 1, 'appid': api_key}
+            ) as resp:
                 if resp.status != 200:
                     return await interaction.response.send_message(
                         f"❌ Couldn't find weather for '{city}'. Try a different city name.",
@@ -815,8 +851,11 @@ class Utility(commands.Cog):
                 country = geo_data[0].get('country', '')
 
             # Get weather data
-            weather_url = f"https://api.openweathermap.org/data/2.5/weather?lat={lat}&lon={lon}&appid={api_key}&units=metric"
-            async with self.session.get(weather_url) as resp:
+            weather_url = "https://api.openweathermap.org/data/2.5/weather"
+            async with self.session.get(
+                weather_url,
+                params={'lat': lat, 'lon': lon, 'appid': api_key, 'units': 'metric'}
+            ) as resp:
                 if resp.status != 200:
                     return await interaction.response.send_message(
                         "❌ Error fetching weather data. Try again later.",
@@ -902,7 +941,7 @@ class Utility(commands.Cog):
             'asin': math.asin, 'acos': math.acos, 'atan': math.atan,
             'sinh': math.sinh, 'cosh': math.cosh, 'tanh': math.tanh,
             'sqrt': math.sqrt, 'log': math.log, 'log10': math.log10,
-            'exp': math.exp, 'pow': math.pow, 'abs': abs,
+            'exp': math.exp, 'abs': abs,
             'ceil': math.ceil, 'floor': math.floor, 'round': round,
         }
         allowed_names = {'pi': math.pi, 'e': math.e, 'tau': math.tau}
@@ -915,13 +954,21 @@ class Utility(commands.Cog):
         if re.search(r'[^\w\s\+\-\*\/\(\)\.\,\^]', expression):
             return await interaction.response.send_message("❌ Invalid characters in expression!", ephemeral=True)
 
+        # Bound compute time: numeric literals are the base for '**'.
+        # (simpleeval's max_power only checks the evaluated exponent, so a
+        # 98-digit literal used as the base could still burn CPU for minutes.)
+        if re.search(r'\d{13,}', expression):
+            return await interaction.response.send_message(
+                "❌ Numbers are limited to 12 digits!", ephemeral=True
+            )
+
         # Replace ^ with ** for exponentiation
         expression = expression.replace('^', '**')
 
         # Evaluate with a timeout (asyncio)
         def run_eval():
             s = SimpleEval()
-            s.max_power = 10_000_000  # Prevent huge exponents
+            s.max_power = 10_000  # Prevent huge exponents (both ** and computed)
             s.functions = allowed_functions
             s.names = allowed_names
             return s.eval(expression)
@@ -934,8 +981,8 @@ class Utility(commands.Cog):
             return await interaction.response.send_message("❌ Cannot divide by zero!", ephemeral=True)
         except (SyntaxError, NameError, TypeError, ValueError, OverflowError) as e:
             return await interaction.response.send_message(f"❌ Invalid expression: {e}", ephemeral=True)
-        except Exception as e:
-            return await interaction.response.send_message(f"❌ Calculation error: {e}", ephemeral=True)
+        except Exception:
+            return await interaction.response.send_message("❌ Calculation error.", ephemeral=True)
 
         # Reject huge results
         try:

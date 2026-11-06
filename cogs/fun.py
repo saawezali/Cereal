@@ -40,8 +40,8 @@ class Fun(commands.Cog):
                     data = await resp.json()
 
                     # Skip NSFW posts and entries without an image URL
-                    # if data.get('nsfw'):
-                    #     continue
+                    if data.get('nsfw'):
+                        continue
                     url = data.get('url')
                     if not url:
                         continue
@@ -116,7 +116,7 @@ class Fun(commands.Cog):
                         f"{target.mention}, somewhere out there is a tree tirelessly producing oxygen for you. Go apologize to it.",
                     ]
                     roast_text = random.choice(roasts)
-        except:
+        except Exception:
             # Fallback if API fails
             roasts = [
                 f"{target.mention}, I'd explain it to you but I left my crayons at home.",
@@ -191,7 +191,7 @@ class Fun(commands.Cog):
                         await interaction.response.send_message("❌ Couldn't fetch a quote right now!", ephemeral=True)
                 else:
                     await interaction.response.send_message("❌ Couldn't fetch a quote right now!", ephemeral=True)
-        except:
+        except Exception:
             await interaction.response.send_message("❌ Couldn't fetch a quote right now!", ephemeral=True)
     
     @app_commands.command(name='ship', description='Ship two members together')

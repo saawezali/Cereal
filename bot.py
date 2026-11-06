@@ -26,6 +26,8 @@ class CerealBot(commands.Bot):
             command_prefix='!',
             intents=intents,
             help_command=None,
+            # Never mass-ping by default; commands must opt in per message.
+            allowed_mentions=discord.AllowedMentions.none(),
         )
         
         self.start_time = time.time()
@@ -66,9 +68,11 @@ class CerealBot(commands.Bot):
             # Get guild ID from environment (optional - for dev/testing)
             guild_id = config.GUILD_ID
 
-            if guild_id and guild_id != 0:
-                # DEV MODE: Sync to specific server only (instant)
-                # Clear global commands first to avoid duplicates
+            # DEV MODE: Sync to specific server only (instant)
+            # Only when DEBUG_MODE is explicitly enabled, so a leftover test
+            # GUILD_ID in a production .env can't wipe global commands.
+            # Clear global commands first to avoid duplicates
+            if guild_id and guild_id != 0 and config.DEBUG_MODE:
                 self.tree.clear_commands(guild=None)
                 
                 guild = discord.Object(id=int(guild_id))
@@ -105,9 +109,13 @@ class CerealBot(commands.Bot):
         self.health_app.router.add_get('/ping', self.ping_check)  # Simple ping endpoint
         self.health_runner = web.AppRunner(self.health_app)
         await self.health_runner.setup()
-        site = web.TCPSite(self.health_runner, '0.0.0.0', 8080)
+        # Bind to loopback by default so /health isn't reachable from the
+        # network; set HEALTH_HOST=0.0.0.0 explicitly if external monitoring
+        # is required.
+        health_host = os.getenv('HEALTH_HOST', '127.0.0.1')
+        site = web.TCPSite(self.health_runner, health_host, 8080)
         await site.start()
-        logger.info('Health check server started on port 8080 (/health and /ping endpoints)')
+        logger.info(f'Health check server started on {health_host}:8080 (/health and /ping endpoints)')
         
         # Give health server time to be ready
         await asyncio.sleep(2)
@@ -154,9 +162,9 @@ class CerealBot(commands.Bot):
         if isinstance(error, commands.CommandNotFound):
             return  # Ignore command not found errors
         elif isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ You don't have permission to use this command!", ephemeral=True)
+            await ctx.send("❌ You don't have permission to use this command!")
         elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.send("❌ I don't have the required permissions!", ephemeral=True)
+            await ctx.send("❌ I don't have the required permissions!")
         else:
             logger.error(f"Command error: {error}", exc_info=True)
 

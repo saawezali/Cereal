@@ -175,7 +175,7 @@ class Games(commands.Cog):
             embed.add_field(name="Total", value=str(total), inline=False)
             
             await interaction.response.send_message(embed=embed)
-        except:
+        except Exception:
             await interaction.response.send_message("❌ Invalid format! Use NdN (e.g., 2d6)", ephemeral=True)
 class TruthOrDareView(discord.ui.View):
     def __init__(self, bot, user, truths, dares):
