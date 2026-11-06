@@ -126,7 +126,7 @@ We're constantly working on new features! Upcoming additions may include:
 ## 🛠️ For Developers
 
 ### Prerequisites
-- Python 3.8 or higher
+- Python 3.10 or higher (CI tests 3.10–3.13)
 - Discord Bot Token ([Get one here](https://discord.com/developers/applications))
 - Git for version control
 
@@ -205,7 +205,7 @@ We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) f
 
 The project includes GitHub Actions for automated testing:
 
-- **Multi-Python Version Testing**: Python 3.8-3.11
+- **Multi-Python Version Testing**: Python 3.10-3.13
 - **Syntax Validation**: Automatic compilation checks
 - **Code Quality**: Flake8 linting
 - **Automated Deployment**: Ready for production deployment
