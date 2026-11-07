@@ -224,8 +224,17 @@ DISPLAY_MAP = {
     'australian eastern standard time': 'AEST(Australian Eastern Standard Time)', 'australian central standard time': 'ACST(Australian Central Standard Time)', 'australian western standard time': 'AWST(Australian Western Standard Time)',
 }
 
-# Help menu categories in display order (Owner is never listed)
+# Help menu categories in display order (Owner is never listed).
+# Each category is backed by one or more cogs — e.g. the Automeme cog
+# reports under fun since auto-memes are a fun feature.
 HELP_CATEGORIES = ("moderation", "games", "fun", "utility")
+
+HELP_CATEGORY_COGS = {
+    "moderation": ("Moderation",),
+    "games": ("Games",),
+    "fun": ("Fun", "Automeme"),
+    "utility": ("Utility",),
+}
 
 HELP_CATEGORY_COLORS = {
     "moderation": Colors.MODERATION,
@@ -235,30 +244,41 @@ HELP_CATEGORY_COLORS = {
 }
 
 
-def _help_cog_for(bot, category_key):
-    """Find the cog backing a help category (case-insensitive)."""
-    for cog_name, cog in bot.cogs.items():
-        if cog_name.lower() == category_key:
-            return cog
-    return None
+def _help_cogs_for(bot, category_key):
+    """All cogs backing a help category (in declared order)."""
+    for cog_name in HELP_CATEGORY_COGS.get(category_key, ()):
+        cog = bot.cogs.get(cog_name)
+        if cog is not None:
+            yield cog
 
 
 def _help_all_commands(bot):
     """All visible slash commands as (category_key, command) pairs, sorted by name."""
     pairs = []
     for key in HELP_CATEGORIES:
-        cog = _help_cog_for(bot, key)
-        if cog is None:
+        cogs = [c for c in _help_cogs_for(bot, key)]
+        if not cogs:
             continue
-        for cmd in sorted(cog.get_app_commands(), key=lambda c: c.name):
+        cmds = []
+        for cog in cogs:
+            cmds.extend(cog.get_app_commands())
+        for cmd in sorted(cmds, key=lambda c: c.name):
             pairs.append((key, cmd))
     return pairs
 
 
 def _help_usage(cmd):
-    """Short usage line, e.g. /roll dice or /remind <time> <message>."""
+    """Short usage line, e.g. /roll dice or /remind <time> <message>.
+
+    Command groups have no direct parameters; their card instead lists
+    the subcommands (e.g. /automeme <enable|disable|status>).
+    """
+    params = getattr(cmd, 'parameters', None)
+    if params is None:
+        subs = ' | '.join(s.name for s in cmd.commands)
+        return f"/{cmd.name} <{subs}>"
     parts = []
-    for p in cmd.parameters:
+    for p in params:
         parts.append(f"<{p.name}>" if p.required else f"[{p.name}]")
     return f"/{cmd.name} {' '.join(parts)}".strip()
 
@@ -299,12 +319,15 @@ def _help_category_embed(bot, category_key):
     """Embed for one category. Returns None for unknown keys."""
     if category_key not in HELP_CATEGORIES:
         return None
-    cog = _help_cog_for(bot, category_key)
-    if cog is None:
+    cogs = list(_help_cogs_for(bot, category_key))
+    if not cogs:
         return None
 
     meta = COMMAND_CATEGORIES[category_key]
-    cmds = sorted(cog.get_app_commands(), key=lambda c: c.name)
+    cmds = []
+    for c in cogs:
+        cmds.extend(c.get_app_commands())
+    cmds = sorted(cmds, key=lambda c: c.name)
 
     embed = discord.Embed(
         title=f"{meta['name']} Commands",
@@ -314,7 +337,9 @@ def _help_category_embed(bot, category_key):
 
     for cmd in cmds:
         value = cmd.description or "No description."
-        if cmd.parameters:
+        if getattr(cmd, 'parameters', None):
+            value += f"\nUsage: `{_help_usage(cmd)}`"
+        elif getattr(cmd, 'commands', None):  # command group
             value += f"\nUsage: `{_help_usage(cmd)}`"
         embed.add_field(name=f"/{cmd.name}", value=value, inline=False)
 
@@ -334,7 +359,14 @@ def _help_detail_embed(bot, name):
             )
             embed.add_field(name="Category", value=meta["name"], inline=True)
             embed.add_field(name="Usage", value=f"`{_help_usage(cmd)}`", inline=False)
-            if cmd.parameters:
+            if getattr(cmd, 'commands', None) and getattr(cmd, 'parameters', None) is None:
+                # Command group: list the subcommands in place of parameters
+                lines = [
+                    f"`/{cmd.name} {s.name}` - {s.description or 'No description.'}"
+                    for s in sorted(cmd.commands, key=lambda s: s.name)
+                ]
+                embed.add_field(name="Subcommands", value="\n".join(lines)[:1024], inline=False)
+            elif cmd.parameters:
                 lines = []
                 for p in cmd.parameters:
                     req = "required" if p.required else "optional"
@@ -362,8 +394,7 @@ class HelpSelect(discord.ui.Select):
         ]
         for key in HELP_CATEGORIES:
             meta = COMMAND_CATEGORIES[key]
-            cog = _help_cog_for(bot, key)
-            count = len(cog.get_app_commands()) if cog else 0
+            count = sum(len(cog.get_app_commands()) for cog in _help_cogs_for(bot, key))
             options.append(
                 discord.SelectOption(
                     label=f"{meta['name']} ({count})",

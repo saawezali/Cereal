@@ -56,8 +56,8 @@ Helpful tools for server management and daily use:
 |----------|----------|
 | **Moderation** | kick, ban, unban, mute, unmute, clear, warn, warnings, clear_warnings, slowmode |
 | **Games** | truthordare, wouldyourather, neverhaveiever, 8ball, rps, flip, roll |
-| **Fun** | meme, dadjoke, fact, quote, joke, nope, roast, compliment, ship, avatar, userinfo, serverinfo |
-| **Utility** | remind, reminders, poll, afk, ping, suggest, timer, calculate, say, embed, timezone, weather, automeme, help |
+| **Fun** | meme, dadjoke, fact, quote, joke, nope, roast, compliment, ship, avatar, userinfo, serverinfo, automeme (enable, disable, status) |
+| **Utility** | remind, reminders, poll, afk, ping, suggest, timer, calculate, say, embed, timezone, weather, help |
 
 ## Setup & Permissions
 
