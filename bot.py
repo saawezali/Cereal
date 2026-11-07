@@ -15,6 +15,23 @@ from db import init_db, close_db, initialize_repositories
 setup_logging()
 logger = get_logger(__name__)
 
+
+def _health_bind():
+    """Health-server bind target.
+
+    PaaS platforms (Render, Heroku, ...) export PORT and require a binding
+    on 0.0.0.0:$PORT — honor that contract and flag the payload as public.
+    Otherwise bind loopback 8080 (respecting HEALTH_HOST for containers).
+    """
+    port_env = os.getenv('PORT')
+    if port_env:
+        try:
+            return '0.0.0.0', int(port_env), True
+        except ValueError:
+            logger.warning(f'Ignoring non-numeric PORT={port_env!r}; falling back to loopback')
+    return os.getenv('HEALTH_HOST', '127.0.0.1'), 8080, False
+
+
 class CerealBot(commands.Bot):
     def __init__(self):
         intents = discord.Intents.default()
@@ -110,22 +127,28 @@ class CerealBot(commands.Bot):
         self.health_app.router.add_get('/ping', self.ping_check)  # Simple ping endpoint
         self.health_runner = web.AppRunner(self.health_app)
         await self.health_runner.setup()
-        # Bind to loopback by default so /health isn't reachable from the
-        # network; set HEALTH_HOST=0.0.0.0 explicitly if external monitoring
-        # is required.
-        health_host = os.getenv('HEALTH_HOST', '127.0.0.1')
-        site = web.TCPSite(self.health_runner, health_host, 8080)
+        health_host, health_port, self.health_public = _health_bind()
+        site = web.TCPSite(self.health_runner, health_host, health_port)
         await site.start()
-        logger.info(f'Health check server started on {health_host}:8080 (/health and /ping endpoints)')
-        
         # Give health server time to be ready
         await asyncio.sleep(2)
+        if self.health_public:
+            logger.info(
+                f'Health check server started on {health_host}:{health_port} '
+                f'(platform PORT detected, minimal payload) (/health and /ping endpoints)'
+            )
+        else:
+            logger.info(f'Health check server started on {health_host}:{health_port} (/health and /ping endpoints)')
         logger.info('Bot fully ready and health server operational')
+
     
     async def health_check(self, request):
         """Health check endpoint for monitoring"""
         try:
-            # Quick response check
+            if getattr(self, 'health_public', False):
+                # Bound on 0.0.0.0 (PaaS): don't leak operational metadata
+                return web.json_response({'status': 'healthy'})
+            # Detailed payload for loopback callers (Docker healthcheck, curl)
             return web.json_response({
                 'status': 'healthy',
                 'bot_name': str(self.user) if self.user else 'Unknown',
@@ -139,7 +162,6 @@ class CerealBot(commands.Bot):
             logger.error(f"Health check error: {e}")
             return web.json_response({
                 'status': 'error',
-                'error': str(e),
                 'timestamp': time.time()
             }, status=500)
     
