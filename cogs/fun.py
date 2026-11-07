@@ -4,6 +4,12 @@ from discord.ext import commands
 import random
 import aiohttp
 
+# Shared Reddit meme fetcher/builders (also used by the auto-meme poster)
+from core.memes import build_meme_embed, fetch_random_meme
+from core import get_logger
+
+logger = get_logger(__name__)
+
 class Fun(commands.Cog):
     """Fun commands and memes"""
     
@@ -22,45 +28,16 @@ class Fun(commands.Cog):
     
     @app_commands.command(name='meme', description='Get a random meme from Reddit')
     async def meme(self, interaction: discord.Interaction):
-        """Get a random meme via meme-api (no auth required)"""
-        subreddits = ['memes', 'dankmemes', 'me_irl', 'darkmemers', 'HistoryMemes']
+        """Get a random meme via the shared meme-api helper (no auth required)"""
+        data = await fetch_random_meme(self.session, max_attempts=5)
 
-        # Try multiple times to get a valid meme
-        for attempt in range(5):
-            subreddit = random.choice(subreddits)
+        if data is None:
+            return await interaction.response.send_message(
+                "✗ Couldn't fetch a meme right now. Try again!", ephemeral=True
+            )
 
-            try:
-                async with self.session.get(
-                    f'https://meme-api.com/gimme/{subreddit}',
-                    timeout=aiohttp.ClientTimeout(total=10)
-                ) as resp:
-                    if resp.status != 200:
-                        continue
-
-                    data = await resp.json()
-
-                    # Skip NSFW posts and entries without an image URL
-                    if data.get('nsfw'):
-                        continue
-                    url = data.get('url')
-                    if not url:
-                        continue
-
-                    embed = discord.Embed(
-                        title=data.get('title', 'Meme')[:256],  # Discord limit
-                        color=discord.Color.random(),
-                        url=data.get('postLink')
-                    )
-                    embed.set_image(url=url)
-                    embed.set_footer(text=f"👍 {data.get('ups', 0)} | r/{data.get('subreddit', subreddit)}")
-
-                    return await interaction.response.send_message(embed=embed)
-
-            except Exception as e:
-                print(f"Meme error attempt {attempt + 1}: {e}")
-                continue
-
-        await interaction.response.send_message("❌ Couldn't fetch a meme right now. Try again!", ephemeral=True)
+        embed = build_meme_embed(data)
+        await interaction.response.send_message(embed=embed)
     
     @app_commands.command(name='dadjoke', description='Get a random dad joke')
     async def dad_joke(self, interaction: discord.Interaction):
@@ -70,13 +47,13 @@ class Fun(commands.Cog):
             if resp.status == 200:
                 data = await resp.json()
                 embed = discord.Embed(
-                    title="😄 Dad Joke",
+                    title="Dad Joke",
                     description=data['joke'],
                     color=discord.Color.blue()
                 )
                 await interaction.response.send_message(embed=embed)
             else:
-                await interaction.response.send_message("❌ Couldn't fetch a joke right now!", ephemeral=True)
+                await interaction.response.send_message("✗ Couldn't fetch a joke right now!", ephemeral=True)
     
     @app_commands.command(name='fact', description='Get a random fact')
     async def random_fact(self, interaction: discord.Interaction):
@@ -85,13 +62,13 @@ class Fun(commands.Cog):
             if resp.status == 200:
                 data = await resp.json()
                 embed = discord.Embed(
-                    title="🧠 Random Fact",
+                    title="Random Fact",
                     description=data['text'],
                     color=discord.Color.green()
                 )
                 await interaction.response.send_message(embed=embed)
             else:
-                await interaction.response.send_message("❌ Couldn't fetch a fact right now!", ephemeral=True)
+                await interaction.response.send_message("✗ Couldn't fetch a fact right now!", ephemeral=True)
     
     @app_commands.command(name='roast', description='Roast someone (or yourself)')
     @app_commands.describe(member='The member to roast (optional)')
@@ -130,7 +107,7 @@ class Fun(commands.Cog):
             roast_text = random.choice(roasts)
         
         embed = discord.Embed(
-            title="🔥 Roasted!",
+            title="Roasted!",
             description=f"{target.mention}, {roast_text}",
             color=discord.Color.orange()
         )
@@ -164,7 +141,7 @@ class Fun(commands.Cog):
         compliment_text = random.choice(compliments)
         
         embed = discord.Embed(
-            title="💝 Compliment",
+            title="Compliment",
             description=f"{target.mention}, {compliment_text}",
             color=discord.Color.pink()
         )
@@ -182,17 +159,17 @@ class Fun(commands.Cog):
                         author = data[0]['a']
                         
                         embed = discord.Embed(
-                            title="✍️...",
+                            title="Quote",
                             description=f'\n\n"{quote_text}"\n\n— {author}',
                             color=discord.Color.blue()
                         )
                         await interaction.response.send_message(embed=embed)
                     else:
-                        await interaction.response.send_message("❌ Couldn't fetch a quote right now!", ephemeral=True)
+                        await interaction.response.send_message("✗ Couldn't fetch a quote right now!", ephemeral=True)
                 else:
-                    await interaction.response.send_message("❌ Couldn't fetch a quote right now!", ephemeral=True)
+                    await interaction.response.send_message("✗ Couldn't fetch a quote right now!", ephemeral=True)
         except Exception:
-            await interaction.response.send_message("❌ Couldn't fetch a quote right now!", ephemeral=True)
+            await interaction.response.send_message("✗ Couldn't fetch a quote right now!", ephemeral=True)
     
     @app_commands.command(name='ship', description='Ship two members together')
     @app_commands.describe(member1='First member', member2='Second member (optional)')
@@ -211,20 +188,20 @@ class Fun(commands.Cog):
         
         # Determine relationship status
         if ship_percentage < 25:
-            status = "💔 Not meant to be..."
+            status = "Not meant to be..."
             color = discord.Color.dark_gray()
         elif ship_percentage < 50:
-            status = "😐 Could work with effort"
+            status = "Could work with effort"
             color = discord.Color.orange()
         elif ship_percentage < 75:
-            status = "💕 Good match!"
+            status = "Good match!"
             color = discord.Color.blue()
         else:
-            status = "💖 Perfect match!"
+            status = "Perfect match!"
             color = discord.Color.red()
         
         embed = discord.Embed(
-            title=f"💘 {ship_name}",
+            title=f"{ship_name}",
             description=f"{member1.mention} + {member2.mention}",
             color=color
         )
@@ -330,12 +307,12 @@ class Fun(commands.Cog):
 
                     if data.get('error'):
                         return await interaction.response.send_message(
-                            "❌ Couldn't fetch a joke right now!",
+                            "✗ Couldn't fetch a joke right now!",
                             ephemeral=True
                         )
 
                     embed = discord.Embed(
-                        title="😂 Random Joke",
+                        title="Random Joke",
                         description=data['joke'],
                         color=discord.Color.orange()
                     )
@@ -346,14 +323,14 @@ class Fun(commands.Cog):
                     await interaction.response.send_message(embed=embed)
                 else:
                     await interaction.response.send_message(
-                        "❌ Couldn't fetch a joke right now!",
+                        "✗ Couldn't fetch a joke right now!",
                         ephemeral=True
                     )
 
         except Exception as e:
-            print(f"Joke error: {e}")
+            logger.error(f"Joke error: {e}")
             await interaction.response.send_message(
-                "❌ Error fetching joke. Try again later.",
+                "✗ Error fetching joke. Try again later.",
                 ephemeral=True
             )
 
@@ -370,7 +347,7 @@ class Fun(commands.Cog):
                     reason = data.get('reason', 'I just can\'t right now.')
 
                     embed = discord.Embed(
-                        title="❌ Nope!",
+                        title="Nope!",
                         description=reason,
                         color=discord.Color.red()
                     )
@@ -379,14 +356,14 @@ class Fun(commands.Cog):
                     await interaction.response.send_message(embed=embed)
                 else:
                     await interaction.response.send_message(
-                        "❌ Couldn't get an excuse right now!",
+                        "✗ Couldn't get an excuse right now!",
                         ephemeral=True
                     )
 
         except Exception as e:
-            print(f"Nope error: {e}")
+            logger.error(f"Nope error: {e}")
             await interaction.response.send_message(
-                "❌ Error getting excuse. Try again later.",
+                "✗ Error getting excuse. Try again later.",
                 ephemeral=True
             )
 

@@ -20,21 +20,21 @@ class Moderation(commands.Cog):
     async def kick(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
         """Kick a member from the server"""
         if interaction.guild is None or not interaction.user.guild_permissions.kick_members:
-            return await interaction.response.send_message("❌ You need Kick Members permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Kick Members permission!", ephemeral=True)
         if member.top_role >= interaction.user.top_role:
-            return await interaction.response.send_message("❌ You cannot kick someone with equal or higher role!", ephemeral=True)
+            return await interaction.response.send_message("✗ You cannot kick someone with equal or higher role!", ephemeral=True)
         
         if member.id == interaction.guild.owner_id:
-            return await interaction.response.send_message("❌ Cannot kick the server owner!", ephemeral=True)
+            return await interaction.response.send_message("✗ Cannot kick the server owner!", ephemeral=True)
         
         if member.id == interaction.client.user.id:
-            return await interaction.response.send_message("❌ I cannot kick myself!", ephemeral=True)
+            return await interaction.response.send_message("✗ I cannot kick myself!", ephemeral=True)
         
         try:
             await member.kick(reason=reason)
             
             embed = discord.Embed(
-                title="👢 Member Kicked",
+                title="Member Kicked",
                 description=f"{member.mention} has been kicked",
                 color=discord.Color.orange()
             )
@@ -42,7 +42,7 @@ class Moderation(commands.Cog):
             embed.add_field(name="Moderator", value=interaction.user.mention)
             await interaction.response.send_message(embed=embed)
         except discord.Forbidden:
-            return await interaction.response.send_message("❌ I don't have permission to kick this member!", ephemeral=True)
+            return await interaction.response.send_message("✗ I don't have permission to kick this member!", ephemeral=True)
     
     @app_commands.command(name='ban', description='Ban a member from the server')
     @app_commands.describe(member='The member to ban', reason='Reason for banning')
@@ -51,21 +51,21 @@ class Moderation(commands.Cog):
     async def ban(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
         """Ban a member from the server"""
         if interaction.guild is None or not interaction.user.guild_permissions.ban_members:
-            return await interaction.response.send_message("❌ You need Ban Members permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Ban Members permission!", ephemeral=True)
         if member.top_role >= interaction.user.top_role:
-            return await interaction.response.send_message("❌ You cannot ban someone with equal or higher role!", ephemeral=True)
+            return await interaction.response.send_message("✗ You cannot ban someone with equal or higher role!", ephemeral=True)
         
         if member.id == interaction.guild.owner_id:
-            return await interaction.response.send_message("❌ Cannot ban the server owner!", ephemeral=True)
+            return await interaction.response.send_message("✗ Cannot ban the server owner!", ephemeral=True)
         
         if member.id == interaction.client.user.id:
-            return await interaction.response.send_message("❌ I cannot ban myself!", ephemeral=True)
+            return await interaction.response.send_message("✗ I cannot ban myself!", ephemeral=True)
         
         try:
             await member.ban(reason=reason)
             
             embed = discord.Embed(
-                title="🔨 Member Banned",
+                title="Member Banned",
                 description=f"{member.mention} has been banned",
                 color=discord.Color.red()
             )
@@ -73,7 +73,7 @@ class Moderation(commands.Cog):
             embed.add_field(name="Moderator", value=interaction.user.mention)
             await interaction.response.send_message(embed=embed)
         except discord.Forbidden:
-            return await interaction.response.send_message("❌ I don't have permission to ban this member!", ephemeral=True)
+            return await interaction.response.send_message("✗ I don't have permission to ban this member!", ephemeral=True)
     
     @app_commands.command(name='unban', description='Unban a user by their ID')
     @app_commands.describe(user_id='The ID of the user to unban')
@@ -81,16 +81,16 @@ class Moderation(commands.Cog):
     async def unban(self, interaction: discord.Interaction, user_id: str):
         """Unban a member by their ID"""
         if interaction.guild is None or not interaction.user.guild_permissions.ban_members:
-            return await interaction.response.send_message("❌ You need Ban Members permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Ban Members permission!", ephemeral=True)
         try:
             user_id_int = int(user_id)
             user = await self.bot.fetch_user(user_id_int)
             await interaction.guild.unban(user)
-            await interaction.response.send_message(f"✅ {user.mention} has been unbanned")
+            await interaction.response.send_message(f"✔ {user.mention} has been unbanned")
         except ValueError:
-            await interaction.response.send_message("❌ Invalid user ID!", ephemeral=True)
+            await interaction.response.send_message("✗ Invalid user ID!", ephemeral=True)
         except discord.NotFound:
-            await interaction.response.send_message("❌ User not found or not banned", ephemeral=True)
+            await interaction.response.send_message("✗ User not found or not banned", ephemeral=True)
     
     @app_commands.command(name='mute', description='Timeout a member')
     @app_commands.describe(
@@ -103,27 +103,27 @@ class Moderation(commands.Cog):
     async def mute(self, interaction: discord.Interaction, member: discord.Member, duration: int = 60, reason: str = None):
         """Timeout a member (duration in minutes, max 40320)"""
         if interaction.guild is None or not interaction.user.guild_permissions.moderate_members:
-            return await interaction.response.send_message("❌ You need Moderate Members permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Moderate Members permission!", ephemeral=True)
         if member.top_role >= interaction.user.top_role:
-            return await interaction.response.send_message("❌ You cannot mute someone with equal or higher role!", ephemeral=True)
+            return await interaction.response.send_message("✗ You cannot mute someone with equal or higher role!", ephemeral=True)
         
         if member.id == interaction.guild.owner_id:
-            return await interaction.response.send_message("❌ Cannot mute the server owner!", ephemeral=True)
+            return await interaction.response.send_message("✗ Cannot mute the server owner!", ephemeral=True)
         
         if member.id == interaction.client.user.id:
-            return await interaction.response.send_message("❌ I cannot mute myself!", ephemeral=True)
+            return await interaction.response.send_message("✗ I cannot mute myself!", ephemeral=True)
         
         if duration < 1:
-            return await interaction.response.send_message("❌ Duration must be at least 1 minute!", ephemeral=True)
+            return await interaction.response.send_message("✗ Duration must be at least 1 minute!", ephemeral=True)
         
         if duration > 40320:
-            return await interaction.response.send_message("❌ Duration cannot exceed 40320 minutes (28 days)!", ephemeral=True)
+            return await interaction.response.send_message("✗ Duration cannot exceed 40320 minutes (28 days)!", ephemeral=True)
         
         try:
             await member.timeout(timedelta(minutes=duration), reason=reason)
             
             embed = discord.Embed(
-                title="🔇 Member Muted",
+                title="Member Muted",
                 description=f"{member.mention} has been muted for {duration} minutes",
                 color=discord.Color.blue()
             )
@@ -131,7 +131,7 @@ class Moderation(commands.Cog):
             embed.add_field(name="Moderator", value=interaction.user.mention)
             await interaction.response.send_message(embed=embed)
         except Exception:
-            await interaction.response.send_message("❌ Couldn't mute this member. Try again later.", ephemeral=True)
+            await interaction.response.send_message("✗ Couldn't mute this member. Try again later.", ephemeral=True)
     
     @app_commands.command(name='unmute', description='Remove timeout from a member')
     @app_commands.describe(member='The member to unmute')
@@ -140,14 +140,14 @@ class Moderation(commands.Cog):
     async def unmute(self, interaction: discord.Interaction, member: discord.Member):
         """Remove timeout from a member"""
         if interaction.guild is None or not interaction.user.guild_permissions.moderate_members:
-            return await interaction.response.send_message("❌ You need Moderate Members permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Moderate Members permission!", ephemeral=True)
         try:
             await member.timeout(None)
-            await interaction.response.send_message(f"✅ {member.mention} has been unmuted")
+            await interaction.response.send_message(f"✔ {member.mention} has been unmuted")
         except discord.Forbidden:
-            await interaction.response.send_message("❌ I don't have permission to unmute this member!", ephemeral=True)
+            await interaction.response.send_message("✗ I don't have permission to unmute this member!", ephemeral=True)
         except Exception:
-            await interaction.response.send_message("❌ Couldn't unmute this member. Try again later.", ephemeral=True)
+            await interaction.response.send_message("✗ Couldn't unmute this member. Try again later.", ephemeral=True)
     
     @app_commands.command(name='clear', description='Delete messages from the channel')
     @app_commands.describe(amount='Number of messages to delete (max 100)')
@@ -156,12 +156,12 @@ class Moderation(commands.Cog):
     async def clear(self, interaction: discord.Interaction, amount: int = 10):
         """Delete messages from the channel (max 100)"""
         if interaction.guild is None or not interaction.user.guild_permissions.manage_messages:
-            return await interaction.response.send_message("❌ You need Manage Messages permission!", ephemeral=True)
+            return await interaction.response.send_message(" You need Manage Messages permission!", ephemeral=True)
         if amount > 100:
-            return await interaction.response.send_message("❌ Cannot delete more than 100 messages at once", ephemeral=True)
+            return await interaction.response.send_message("✗ Cannot delete more than 100 messages at once", ephemeral=True)
         
         if amount < 1:
-            return await interaction.response.send_message("❌ Amount must be at least 1", ephemeral=True)
+            return await interaction.response.send_message("✗ Amount must be at least 1", ephemeral=True)
         
         try:
             await interaction.response.defer(ephemeral=True)
@@ -172,11 +172,11 @@ class Moderation(commands.Cog):
                 check=lambda m: not m.pinned
             )
             
-            await interaction.followup.send(f"🗑️ Deleted {len(deleted)} messages", ephemeral=True)
+            await interaction.followup.send(f"Deleted {len(deleted)} messages", ephemeral=True)
         except discord.Forbidden:
-            await interaction.followup.send("❌ I don't have permission to delete messages!", ephemeral=True)
+            await interaction.followup.send("✗ I don't have permission to delete messages!", ephemeral=True)
         except discord.HTTPException:
-            await interaction.followup.send("❌ Failed to delete messages. They might be too old (14+ days).", ephemeral=True)
+            await interaction.followup.send("✗ Failed to delete messages. They might be too old (14+ days).", ephemeral=True)
     
     @app_commands.command(name='warn', description='Warn a member')
     @app_commands.describe(member='The member to warn', reason='Reason for warning')
@@ -184,19 +184,19 @@ class Moderation(commands.Cog):
     async def warn(self, interaction: discord.Interaction, member: discord.Member, reason: str = None):
         """Warn a member and store in database"""
         if interaction.guild is None or not interaction.user.guild_permissions.moderate_members:
-            return await interaction.response.send_message("❌ You need Moderate Members permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Moderate Members permission!", ephemeral=True)
         # Check permissions
         if member.id == interaction.user.id:
-            return await interaction.response.send_message("❌ You cannot warn yourself!", ephemeral=True)
+            return await interaction.response.send_message("✗ You cannot warn yourself!", ephemeral=True)
 
         if member.top_role >= interaction.user.top_role:
-            return await interaction.response.send_message("❌ You cannot warn someone with equal or higher role!", ephemeral=True)
+            return await interaction.response.send_message("✗ You cannot warn someone with equal or higher role!", ephemeral=True)
 
         if member.id == interaction.guild.owner_id:
-            return await interaction.response.send_message("❌ Cannot warn the server owner!", ephemeral=True)
+            return await interaction.response.send_message("✗ Cannot warn the server owner!", ephemeral=True)
 
         if member.id == interaction.client.user.id:
-            return await interaction.response.send_message("❌ I cannot warn myself!", ephemeral=True)
+            return await interaction.response.send_message("✗ I cannot warn myself!", ephemeral=True)
 
         try:
             # Add warning to database
@@ -215,7 +215,7 @@ class Moderation(commands.Cog):
 
             # Create embed
             embed = discord.Embed(
-                title="⚠️ Member Warned",
+                title="⚠ Member Warned",
                 description=f"{member.mention} has been warned",
                 color=discord.Color.yellow()
             )
@@ -254,7 +254,7 @@ class Moderation(commands.Cog):
 
         except Exception as e:
             await interaction.response.send_message(
-                f"❌ An error occurred while warning the user.",
+                f"✗ An error occurred while warning the user.",
                 ephemeral=True
             )
 
@@ -266,7 +266,7 @@ class Moderation(commands.Cog):
         # Viewing someone else's moderation record requires perms; your own is fine
         if member and (interaction.guild is None or not interaction.user.guild_permissions.moderate_members):
             return await interaction.response.send_message(
-                "❌ You need Moderate Members permission to view other members' warnings!",
+                "✗ You need Moderate Members permission to view other members' warnings!",
                 ephemeral=True
             )
         target_user = member or interaction.user
@@ -287,7 +287,7 @@ class Moderation(commands.Cog):
 
             # Create embed
             embed = discord.Embed(
-                title=f"⚠️ Warnings for {target_user.name}",
+                title=f"⚠ Warnings for {target_user.name}",
                 color=discord.Color.orange()
             )
 
@@ -310,7 +310,7 @@ class Moderation(commands.Cog):
 
         except Exception as e:
             await interaction.response.send_message(
-                f"❌ An error occurred while fetching warnings.",
+                f"✗ An error occurred while fetching warnings.",
                 ephemeral=True
             )
 
@@ -320,7 +320,7 @@ class Moderation(commands.Cog):
     async def clear_warnings(self, interaction: discord.Interaction, member: discord.Member):
         """Clear all warnings for a member (admin only)"""
         if interaction.guild is None or not interaction.user.guild_permissions.administrator:
-            return await interaction.response.send_message("❌ You need Administrator permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Administrator permission!", ephemeral=True)
         try:
             # Delete all warnings for this user in this guild
             deleted_count = await warning_repo.delete(
@@ -329,7 +329,7 @@ class Moderation(commands.Cog):
             )
 
             embed = discord.Embed(
-                title="🗑️ Warnings Cleared",
+                title="Warnings Cleared",
                 description=f"Cleared {deleted_count} warning{'s' if deleted_count != 1 else ''} for {member.mention}",
                 color=discord.Color.green()
             )
@@ -339,7 +339,7 @@ class Moderation(commands.Cog):
 
         except Exception as e:
             await interaction.response.send_message(
-                f"❌ An error occurred while clearing warnings.",
+                f"✗ An error occurred while clearing warnings.",
                 ephemeral=True
             )
     
@@ -350,21 +350,21 @@ class Moderation(commands.Cog):
     async def slowmode(self, interaction: discord.Interaction, seconds: int = 0):
         """Set slowmode for the current channel"""
         if interaction.guild is None or not interaction.user.guild_permissions.manage_channels:
-            return await interaction.response.send_message("❌ You need Manage Channels permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Manage Channels permission!", ephemeral=True)
         if seconds > 21600:
-            return await interaction.response.send_message("❌ Slowmode cannot exceed 6 hours (21600 seconds)", ephemeral=True)
+            return await interaction.response.send_message("✗ Slowmode cannot exceed 6 hours (21600 seconds)", ephemeral=True)
         
         if seconds < 0:
-            return await interaction.response.send_message("❌ Slowmode cannot be negative", ephemeral=True)
+            return await interaction.response.send_message("✗ Slowmode cannot be negative", ephemeral=True)
         
         try:
             await interaction.channel.edit(slowmode_delay=seconds)
             if seconds == 0:
-                await interaction.response.send_message("✅ Slowmode disabled")
+                await interaction.response.send_message("✔ Slowmode disabled")
             else:
-                await interaction.response.send_message(f"✅ Slowmode set to {seconds} seconds")
+                await interaction.response.send_message(f"✔ Slowmode set to {seconds} seconds")
         except discord.Forbidden:
-            await interaction.response.send_message("❌ I don't have permission to manage this channel!", ephemeral=True)
+            await interaction.response.send_message("✗ I don't have permission to manage this channel!", ephemeral=True)
 
 async def setup(bot):
     await bot.add_cog(Moderation(bot))

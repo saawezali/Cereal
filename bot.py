@@ -39,11 +39,11 @@ class CerealBot(commands.Bot):
         # Initialize database
         logger.info('Initializing database...')
         await init_db()
-        logger.info('✓ Database ready')
+        logger.info('✔ Database ready')
 
         # Initialize repositories
         await initialize_repositories()
-        logger.info('✓ Repositories ready')
+        logger.info('✔ Repositories ready')
 
         # Load cogs
         cogs = [
@@ -51,13 +51,14 @@ class CerealBot(commands.Bot):
             'cogs.games',
             'cogs.fun',
             'cogs.utility',
+            'cogs.automeme',
             'cogs.owner'
         ]
 
         for cog in cogs:
             try:
                 await self.load_extension(cog)
-                logger.info(f'✓ Loaded {cog}')
+                logger.info(f'✔ Loaded {cog}')
             except Exception as e:
                 logger.error(f'✗ Failed to load {cog}: {e}')
 
@@ -78,13 +79,13 @@ class CerealBot(commands.Bot):
                 guild = discord.Object(id=int(guild_id))
                 self.tree.copy_global_to(guild=guild)
                 synced = await self.tree.sync(guild=guild)
-                logger.info(f'✓ [DEV] Synced {len(synced)} commands to server {guild_id} (INSTANT)')
+                logger.info(f' [DEV] Synced {len(synced)} commands to server {guild_id} (INSTANT)')
                 logger.info('  Global commands cleared - no duplicates!')
             else:
                 # PRODUCTION MODE: Sync globally (takes up to 1 hour)
                 # Clear any guild-specific commands first
                 synced = await self.tree.sync()
-                logger.info(f'✓ [PRODUCTION] Synced {len(synced)} commands globally')
+                logger.info(f' [PRODUCTION] Synced {len(synced)} commands globally')
                 logger.info('  Note: Commands may take up to 1 hour to appear in all servers')
             
         except Exception as e:
@@ -92,7 +93,7 @@ class CerealBot(commands.Bot):
     
     async def on_ready(self):
         """Called when bot is ready"""
-        logger.info(f'{self.user} is now online! 🥣')
+        logger.info(f'{self.user} is now online!')
         logger.info(f'Bot ID: {self.user.id}')
         logger.info(f'Servers: {len(self.guilds)}')
         logger.info(f'Users: {len(self.users)}')
@@ -162,9 +163,9 @@ class CerealBot(commands.Bot):
         if isinstance(error, commands.CommandNotFound):
             return  # Ignore command not found errors
         elif isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ You don't have permission to use this command!")
+            await ctx.send("✗ You don't have permission to use this command!")
         elif isinstance(error, commands.BotMissingPermissions):
-            await ctx.send("❌ I don't have the required permissions!")
+            await ctx.send("✗ I don't have the required permissions!")
         else:
             logger.error(f"Command error: {error}", exc_info=True)
 
@@ -175,9 +176,9 @@ async def sync_global(ctx: commands.Context):
     """Sync slash commands globally (owner only)"""
     try:
         synced = await ctx.bot.tree.sync()
-        await ctx.send(f"✅ Synced {len(synced)} commands globally. May take up to 1 hour to appear everywhere.")
+        await ctx.send(f"✔ Synced {len(synced)} commands globally. May take up to 1 hour to appear everywhere.")
     except Exception as e:
-        await ctx.send(f"❌ Error: {e}")
+        await ctx.send(f"✗ Error: {e}")
 
 @commands.command(name='syncguild')
 @commands.is_owner()
@@ -186,9 +187,9 @@ async def sync_guild(ctx: commands.Context):
     try:
         ctx.bot.tree.copy_global_to(guild=ctx.guild)
         synced = await ctx.bot.tree.sync(guild=ctx.guild)
-        await ctx.send(f"✅ Synced {len(synced)} commands to this server (instant)")
+        await ctx.send(f"✔ Synced {len(synced)} commands to this server (instant)")
     except Exception as e:
-        await ctx.send(f"❌ Error: {e}")
+        await ctx.send(f"✗ Error: {e}")
 
 @commands.command(name='unsync')
 @commands.is_owner()
@@ -197,9 +198,9 @@ async def unsync_guild(ctx: commands.Context):
     try:
         ctx.bot.tree.clear_commands(guild=ctx.guild)
         await ctx.bot.tree.sync(guild=ctx.guild)
-        await ctx.send(f"✅ Removed all commands from this server")
+        await ctx.send(f"✔ Removed all commands from this server")
     except Exception as e:
-        await ctx.send(f"❌ Error: {e}")
+        await ctx.send(f"✗ Error: {e}")
 
 async def main():
     """Main bot startup function"""
@@ -232,7 +233,7 @@ async def main():
     finally:
         # Clean up database connections
         await close_db()
-        logger.info('✓ Cleanup complete')
+        logger.info('✔ Cleanup complete')
 
 # Run the bot
 if __name__ == '__main__':

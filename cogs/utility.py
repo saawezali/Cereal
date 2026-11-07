@@ -12,6 +12,9 @@ from simpleeval import simple_eval, SimpleEval
 
 # Database imports
 from db import user_repo, guild_repo
+from core import get_logger
+
+logger = get_logger(__name__)
 
 # Help menu metadata (category names, colors, timeout)
 from core.constants import BOT_VERSION, COMMAND_CATEGORIES, Colors, Pagination
@@ -445,7 +448,7 @@ class Utility(commands.Cog):
                     
                     if channel and user:
                         embed = discord.Embed(
-                            title="⏰ Reminder!",
+                            title="Reminder!",
                             description=message,
                             color=discord.Color.blue(),
                             timestamp=datetime.now()
@@ -461,7 +464,7 @@ class Utility(commands.Cog):
                     
                     reminders_to_remove.append(reminder)
                 except Exception as e:
-                    print(f"Error sending reminder: {e}")
+                    logger.error(f"Error sending reminder: {e}")
                     reminders_to_remove.append(reminder)
         
         # Remove sent reminders
@@ -487,7 +490,7 @@ class Utility(commands.Cog):
         time_units = {'s': 1, 'm': 60, 'h': 3600, 'd': 86400}
         
         if time[-1] not in time_units:
-            return await interaction.response.send_message("❌ Invalid time format! Use: 10s, 5m, 2h, or 1d", ephemeral=True)
+            return await interaction.response.send_message("✗ Invalid time format! Use: 10s, 5m, 2h, or 1d", ephemeral=True)
         
         try:
             amount = int(time[:-1])
@@ -495,15 +498,15 @@ class Utility(commands.Cog):
             seconds = amount * time_units[unit]
             
             if seconds < 10:
-                return await interaction.response.send_message("❌ Reminder must be at least 10 seconds!", ephemeral=True)
+                return await interaction.response.send_message("✗ Reminder must be at least 10 seconds!", ephemeral=True)
             if seconds > 2592000:  # 30 days
-                return await interaction.response.send_message("❌ Reminder cannot be longer than 30 days!", ephemeral=True)
+                return await interaction.response.send_message("✗ Reminder cannot be longer than 30 days!", ephemeral=True)
             
             # Per-user cap to prevent memory/resource exhaustion
             user_reminder_count = sum(1 for r in self.reminders if r[0] == interaction.user.id)
             if user_reminder_count >= 10:
                 return await interaction.response.send_message(
-                    "❌ You already have 10 active reminders! Wait for one to complete.",
+                    "✗ You already have 10 active reminders! Wait for one to complete.",
                     ephemeral=True
                 )
             
@@ -513,7 +516,7 @@ class Utility(commands.Cog):
             self.reminders.append((interaction.user.id, interaction.channel.id, remind_time, message))
             
             embed = discord.Embed(
-                title="✅ Reminder Set!",
+                title="✔ Reminder Set!",
                 description=f"I'll remind you about: **{message}**",
                 color=discord.Color.green()
             )
@@ -525,7 +528,7 @@ class Utility(commands.Cog):
             await interaction.response.send_message(embed=embed)
             
         except ValueError:
-            await interaction.response.send_message("❌ Invalid time format! Use: 10s, 5m, 2h, or 1d", ephemeral=True)
+            await interaction.response.send_message("✗ Invalid time format! Use: 10s, 5m, 2h, or 1d", ephemeral=True)
     
     @app_commands.command(name='reminders', description='List your active reminders')
     async def list_reminders(self, interaction: discord.Interaction):
@@ -536,7 +539,7 @@ class Utility(commands.Cog):
             return await interaction.response.send_message("You have no active reminders!", ephemeral=True)
         
         embed = discord.Embed(
-            title=f"⏰ Your Reminders ({len(user_reminders)})",
+            title=f"Your Reminders ({len(user_reminders)})",
             color=discord.Color.blue()
         )
         
@@ -553,39 +556,103 @@ class Utility(commands.Cog):
         
         await interaction.response.send_message(embed=embed)
     
+    # -------------------------
+    # Button views for voting
+    # -------------------------
+
+    class PollView(discord.ui.View):
+        """Button-based poll: one vote per user, switchable while open."""
+
+        OPTION_STYLES = [
+            discord.ButtonStyle.primary, discord.ButtonStyle.secondary,
+        ]
+
+        class OptionButton(discord.ui.Button):
+            """A single poll option; clicking votes (or unvotes) for it."""
+
+            def __init__(self, index, label, style):
+                super().__init__(label=label[:80], style=style)  # 80-char label limit
+                self.index = index
+
+            async def callback(self, interaction: discord.Interaction):
+                view = self.view  # set automatically once added to the PollView
+                if view.votes.get(interaction.user.id) == self.index:
+                    del view.votes[interaction.user.id]  # toggling off
+                else:
+                    view.votes[interaction.user.id] = self.index
+                await view._update_tally(interaction)
+
+        def __init__(self, options):
+            super().__init__(timeout=86400)  # 24 hours
+            self.options = options
+            self.votes = {}  # voter_id -> option index
+            self.message = None  # set by the poll command after sending
+
+            for i, option in enumerate(options):
+                self.add_item(self.OptionButton(
+                    i, option, self.OPTION_STYLES[i % 2]
+                ))
+
+        async def _update_tally(self, interaction):
+            counts = [0] * len(self.options)
+            for idx in self.votes.values():
+                counts[idx] += 1
+
+            lines = [
+                f"{i + 1}. {opt} — {count} vote(s)"
+                for i, (opt, count) in enumerate(zip(self.options, counts))
+            ]
+            base = interaction.message.embeds[0]
+            embed = discord.Embed(
+                title=base.title,
+                description="\n".join(lines),
+                color=base.color,
+                timestamp=base.timestamp,
+            )
+            embed.set_footer(text=base.footer.text)
+            try:
+                await interaction.response.edit_message(embed=embed)
+            except discord.HTTPException:
+                pass
+
+        async def on_timeout(self):
+            for child in self.children:
+                child.disabled = True
+            if self.message:
+                try:
+                    await self.message.edit(view=self)
+                except discord.HTTPException:
+                    pass
+
     @app_commands.command(name='poll', description='Create a poll')
     @app_commands.describe(
         question='The poll question',
         options='Poll options separated by commas (e.g., Option1, Option2, Option3)'
     )
     async def poll(self, interaction: discord.Interaction, question: str, options: str):
-        """Create a poll"""
-        # Split options by comma
-        options_list = [opt.strip() for opt in options.split(',')]
-        
+        """Create a button-based poll with live vote tallies"""
+        options_list = [opt.strip() for opt in options.split(',') if opt.strip()]
+
         if len(options_list) < 2:
-            return await interaction.response.send_message("❌ You need at least 2 options!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need at least 2 options!", ephemeral=True)
         if len(options_list) > 10:
-            return await interaction.response.send_message("❌ Maximum 10 options allowed!", ephemeral=True)
-        
-        # Emoji numbers
-        emoji_numbers = ['1️⃣', '2️⃣', '3️⃣', '4️⃣', '5️⃣', '6️⃣', '7️⃣', '8️⃣', '9️⃣', '🔟']
-        
+            return await interaction.response.send_message("✗ Maximum 10 options allowed!", ephemeral=True)
+
+        view = self.PollView(options_list)
+
         embed = discord.Embed(
-            title="📊 " + question,
-            description="\n".join([f"{emoji_numbers[i]} {option}" for i, option in enumerate(options_list)]),
+            title=question,
+            description="\n".join(
+                f"{i + 1}. {option}" for i, option in enumerate(options_list)
+            ),
             color=discord.Color.blue(),
             timestamp=interaction.created_at
         )
         embed.set_footer(text=f"Poll by {interaction.user.name}")
-        
-        await interaction.response.send_message(embed=embed)
-        msg = await interaction.original_response()
-        
-        # Add reactions
-        for i in range(len(options_list)):
-            await msg.add_reaction(emoji_numbers[i])
-    
+
+        await interaction.response.send_message(embed=embed, view=view)
+        view.message = await interaction.original_response()
+
     @app_commands.command(name='afk', description='Set your AFK status')
     @app_commands.describe(reason='Reason for being AFK')
     async def afk(self, interaction: discord.Interaction, reason: str = "AFK"):
@@ -593,7 +660,7 @@ class Utility(commands.Cog):
         self.afk_users[interaction.user.id] = reason
         
         embed = discord.Embed(
-            title="💤 AFK",
+            title="AFK",
             description=f"{interaction.user.mention} is now AFK: {reason}",
             color=discord.Color.gold()
         )
@@ -619,7 +686,7 @@ class Utility(commands.Cog):
         if mentioned_afk:
             note = " (and more)" if len(list(message.mentions)) > 5 else ""
             lines = [
-                f"💤 {user.display_name} is currently AFK: {self.afk_users[user.id]}"
+                f"{user.display_name} is currently AFK: {self.afk_users[user.id]}"
                 for user in mentioned_afk
             ]
             await message.channel.send("\n".join(lines) + note, delete_after=10)
@@ -630,30 +697,81 @@ class Utility(commands.Cog):
         latency = round(self.bot.latency * 1000)
         
         embed = discord.Embed(
-            title="🏓 Pong!",
+            title="Pong!",
             description=f"Latency: **{latency}ms**",
             color=discord.Color.green() if latency < 200 else discord.Color.red()
         )
         
         await interaction.response.send_message(embed=embed)
     
+    class SuggestionVoteView(discord.ui.View):
+        """Button-based suggestion voting: one vote per user, switchable."""
+
+        class VoteButton(discord.ui.Button):
+            def __init__(self, label, style, direction):
+                super().__init__(label=label, style=style)
+                self.direction = direction
+
+            async def callback(self, interaction: discord.Interaction):
+                view = self.view
+                if view.votes.get(interaction.user.id) == self.direction:
+                    del view.votes[interaction.user.id]  # toggling off
+                else:
+                    view.votes[interaction.user.id] = self.direction
+
+                ups = sum(1 for v in view.votes.values() if v == +1)
+                downs = len(view.votes) - ups
+                base = interaction.message.embeds[0]
+                embed = discord.Embed(
+                    title=base.title,
+                    description=base.description,
+                    color=base.color,
+                    timestamp=base.timestamp,
+                )
+                # Preserve the suggestion author
+                if base.author:
+                    embed.set_author(
+                        name=base.author.name, icon_url=base.author.icon_url
+                    )
+                embed.set_footer(text=f"Votes: {ups} up, {downs} down")
+                try:
+                    await interaction.response.edit_message(embed=embed)
+                except discord.HTTPException:
+                    pass
+
+        def __init__(self):
+            super().__init__(timeout=86400)  # 24 hours
+            self.votes = {}  # voter_id -> +1 / -1
+            self.message = None
+            self.add_item(self.VoteButton('Upvote', discord.ButtonStyle.success, +1))
+            self.add_item(self.VoteButton('Downvote', discord.ButtonStyle.danger, -1))
+
+        async def on_timeout(self):
+            for child in self.children:
+                child.disabled = True
+            if self.message:
+                try:
+                    await self.message.edit(view=self)
+                except discord.HTTPException:
+                    pass
+
     @app_commands.command(name='suggest', description='Submit a suggestion')
     @app_commands.describe(suggestion='Your suggestion')
     async def suggest(self, interaction: discord.Interaction, suggestion: str):
-        """Submit a suggestion"""
+        """Submit a suggestion with button-based voting"""
+        view = self.SuggestionVoteView()
+
         embed = discord.Embed(
-            title="💡 New Suggestion",
+            title="New Suggestion",
             description=suggestion,
             color=discord.Color.blue(),
             timestamp=interaction.created_at
         )
         embed.set_author(name=interaction.user.name, icon_url=interaction.user.display_avatar.url)
-        embed.set_footer(text=f"User ID: {interaction.user.id}")
-        
-        await interaction.response.send_message(embed=embed)
-        msg = await interaction.original_response()
-        await msg.add_reaction('👍')
-        await msg.add_reaction('👎')
+        embed.set_footer(text=f"Votes: 0 up, 0 down | User ID: {interaction.user.id}")
+
+        await interaction.response.send_message(embed=embed, view=view)
+        view.message = await interaction.original_response()
     
     @app_commands.command(name='timer', description='Start a countdown timer')
     @app_commands.describe(time='Time format: 10s, 5m, 2h')
@@ -667,7 +785,7 @@ class Utility(commands.Cog):
         time_units = {'s': 1, 'm': 60, 'h': 3600}
         
         if not time or time[-1] not in time_units:
-            return await interaction.response.send_message("❌ Invalid time format! Use: 10s, 5m, or 2h\nExample: `/timer time:30s`", ephemeral=True)
+            return await interaction.response.send_message("✗ Invalid time format! Use: 10s, 5m, or 2h\nExample: `/timer time:30s`", ephemeral=True)
         
         try:
             amount = int(time[:-1])
@@ -675,14 +793,14 @@ class Utility(commands.Cog):
             seconds = amount * time_units[unit]
             
             if seconds < 1:
-                return await interaction.response.send_message("❌ Timer must be at least 1 second!", ephemeral=True)
+                return await interaction.response.send_message("✗ Timer must be at least 1 second!", ephemeral=True)
             if seconds > 86400:  # 24 hours
-                return await interaction.response.send_message("❌ Timer cannot exceed 24 hours!", ephemeral=True)
+                return await interaction.response.send_message("✗ Timer cannot exceed 24 hours!", ephemeral=True)
             
             # Per-user cap so timers can't be spammed (each parks a coroutine for up to 24h)
             if self.timer_counts.get(interaction.user.id, 0) >= 5:
                 return await interaction.response.send_message(
-                    "❌ You already have 5 active timers! Wait for one to finish.",
+                    "✗ You already have 5 active timers! Wait for one to finish.",
                     ephemeral=True
                 )
             self.timer_counts[interaction.user.id] = self.timer_counts.get(interaction.user.id, 0) + 1
@@ -696,7 +814,7 @@ class Utility(commands.Cog):
                 display_time = f"{seconds // 3600} hour{'s' if seconds // 3600 != 1 else ''}"
             
             embed = discord.Embed(
-                title="⏱️ Timer Started",
+                title="Timer Started",
                 description=f"Timer set for **{display_time}**",
                 color=discord.Color.blue()
             )
@@ -714,21 +832,21 @@ class Utility(commands.Cog):
                     del self.timer_counts[interaction.user.id]
             
             embed = discord.Embed(
-                title="⏰ Timer Complete!",
+                title="Timer Complete!",
                 description=f"Your **{display_time}** timer is up!",
                 color=discord.Color.green()
             )
             
             await msg.edit(embed=embed)
             await interaction.followup.send(
-                f"{interaction.user.mention} ⏰ Time's up!",
+                f"{interaction.user.mention} Time's up!",
                 allowed_mentions=discord.AllowedMentions(users=[interaction.user])
             )
             
         except ValueError:
-            await interaction.response.send_message("❌ Invalid time format! Use: 10s, 5m, or 2h\nExample: `/timer time:30s`", ephemeral=True)
+            await interaction.response.send_message("✗ Invalid time format! Use: 10s, 5m, or 2h\nExample: `/timer time:30s`", ephemeral=True)
         except Exception:
-            await interaction.followup.send("❌ Something went wrong with the timer! Try again later.")
+            await interaction.followup.send("✗ Something went wrong with the timer! Try again later.")
     
     async def timezone_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         """Autocomplete for timezone locations"""
@@ -770,7 +888,7 @@ class Utility(commands.Cog):
                 if location_lower in key or key in location_lower:
                     suggestions.append(key.title())
             
-            error_msg = f"❌ Timezone '{location}' not found!"
+            error_msg = f"✗ Timezone '{location}' not found!"
             if suggestions:
                 error_msg += f"\n\nDid you mean: {', '.join(suggestions[:5])}?"
             else:
@@ -796,22 +914,22 @@ class Utility(commands.Cog):
             
             # Create embed
             embed = discord.Embed(
-                title=f"🌍 Time in {location.title()}",
+                title=f"Time in {location.title()}",
                 color=discord.Color.blue(),
                 timestamp=datetime.utcnow()
             )
             
-            embed.add_field(name="📅 Date", value=date_str, inline=False)
-            embed.add_field(name="🕐 12-Hour", value=time_12h, inline=True)
-            embed.add_field(name="🕐 24-Hour", value=time_24h, inline=True)
-            embed.add_field(name="🌐 Timezone", value=f"{timezone_str}\n({utc_offset_formatted})", inline=False)
+            embed.add_field(name="Date", value=date_str, inline=False)
+            embed.add_field(name="12-Hour", value=time_12h, inline=True)
+            embed.add_field(name="24-Hour", value=time_24h, inline=True)
+            embed.add_field(name="Timezone", value=f"{timezone_str}\n({utc_offset_formatted})", inline=False)
             
             embed.set_footer(text=f"Requested by {interaction.user.name}")
             
             await interaction.response.send_message(embed=embed)
             
         except Exception:
-            await interaction.response.send_message("❌ Error getting timezone. Try another location!", ephemeral=True)
+            await interaction.response.send_message("✗ Error getting timezone. Try another location!", ephemeral=True)
 
     @app_commands.command(name='weather', description='Get weather information for a city')
     @app_commands.describe(city='City name to get weather for')
@@ -821,7 +939,7 @@ class Utility(commands.Cog):
         api_key = os.getenv('WEATHER_API_KEY')
         if not api_key:
             return await interaction.response.send_message(
-                "❌ Weather API key not configured. Please contact the bot owner.",
+                "✗ Weather API key not configured. Please contact the bot owner.",
                 ephemeral=True
             )
 
@@ -835,14 +953,14 @@ class Utility(commands.Cog):
             ) as resp:
                 if resp.status != 200:
                     return await interaction.response.send_message(
-                        f"❌ Couldn't find weather for '{city}'. Try a different city name.",
+                        f"✗ Couldn't find weather for '{city}'. Try a different city name.",
                         ephemeral=True
                     )
 
                 geo_data = await resp.json()
                 if not geo_data:
                     return await interaction.response.send_message(
-                        f"❌ City '{city}' not found. Try a different city name.",
+                        f"✗ City '{city}' not found. Try a different city name.",
                         ephemeral=True
                     )
 
@@ -858,7 +976,7 @@ class Utility(commands.Cog):
             ) as resp:
                 if resp.status != 200:
                     return await interaction.response.send_message(
-                        "❌ Error fetching weather data. Try again later.",
+                        "✗ Error fetching weather data. Try again later.",
                         ephemeral=True
                     )
 
@@ -878,7 +996,7 @@ class Utility(commands.Cog):
             feels_like_f = (feels_like * 9/5) + 32
 
             embed = discord.Embed(
-                title=f"🌤️ Weather in {city_name}, {country}",
+                title=f"Weather in {city_name}, {country}",
                 color=discord.Color.blue(),
                 timestamp=interaction.created_at
             )
@@ -886,33 +1004,33 @@ class Utility(commands.Cog):
             embed.set_thumbnail(url=f"https://openweathermap.org/img/wn/{weather_icon}@2x.png")
 
             embed.add_field(
-                name="🌡️ Temperature",
+                name="Temperature",
                 value=f"{temp:.1f}°C / {temp_f:.1f}°F",
                 inline=True
             )
             embed.add_field(
-                name="🤔 Feels Like",
+                name="Feels Like",
                 value=f"{feels_like:.1f}°C / {feels_like_f:.1f}°F",
                 inline=True
             )
             embed.add_field(
-                name="💧 Humidity",
+                name="Humidity",
                 value=f"{humidity}%",
                 inline=True
             )
 
             embed.add_field(
-                name="🌬️ Wind Speed",
+                name="Wind Speed",
                 value=f"{wind_speed} m/s",
                 inline=True
             )
             embed.add_field(
-                name="📊 Pressure",
+                name="Pressure",
                 value=f"{pressure} hPa",
                 inline=True
             )
             embed.add_field(
-                name="☁️ Conditions",
+                name="Conditions",
                 value=weather_desc,
                 inline=True
             )
@@ -922,9 +1040,9 @@ class Utility(commands.Cog):
             await interaction.response.send_message(embed=embed)
 
         except Exception as e:
-            print(f"Weather error: {e}")
+            logger.error(f"Weather error: {e}")
             await interaction.response.send_message(
-                "❌ Error fetching weather data. Try again later.",
+                "✗ Error fetching weather data. Try again later.",
                 ephemeral=True
             )
 
@@ -948,18 +1066,18 @@ class Utility(commands.Cog):
 
         # Input length limit
         if len(expression) > 100:
-            return await interaction.response.send_message("❌ Expression too long! Limit: 100 characters.", ephemeral=True)
+            return await interaction.response.send_message("✗ Expression too long! Limit: 100 characters.", ephemeral=True)
 
         # Reject anything outside safe math characters before evaluation
         if re.search(r'[^\w\s\+\-\*\/\(\)\.\,\^]', expression):
-            return await interaction.response.send_message("❌ Invalid characters in expression!", ephemeral=True)
+            return await interaction.response.send_message("✗ Invalid characters in expression!", ephemeral=True)
 
         # Bound compute time: numeric literals are the base for '**'.
         # (simpleeval's max_power only checks the evaluated exponent, so a
         # 98-digit literal used as the base could still burn CPU for minutes.)
         if re.search(r'\d{13,}', expression):
             return await interaction.response.send_message(
-                "❌ Numbers are limited to 12 digits!", ephemeral=True
+                "✗ Numbers are limited to 12 digits!", ephemeral=True
             )
 
         # Replace ^ with ** for exponentiation
@@ -976,20 +1094,20 @@ class Utility(commands.Cog):
         try:
             result = await asyncio.wait_for(asyncio.to_thread(run_eval), timeout=2.0)
         except asyncio.TimeoutError:
-            return await interaction.response.send_message("❌ Calculation took too long!", ephemeral=True)
+            return await interaction.response.send_message("✗ Calculation took too long!", ephemeral=True)
         except ZeroDivisionError:
-            return await interaction.response.send_message("❌ Cannot divide by zero!", ephemeral=True)
+            return await interaction.response.send_message("✗ Cannot divide by zero!", ephemeral=True)
         except (SyntaxError, NameError, TypeError, ValueError, OverflowError) as e:
-            return await interaction.response.send_message(f"❌ Invalid expression: {e}", ephemeral=True)
+            return await interaction.response.send_message(f"✗ Invalid expression: {e}", ephemeral=True)
         except Exception:
-            return await interaction.response.send_message("❌ Calculation error.", ephemeral=True)
+            return await interaction.response.send_message("✗ Calculation error.", ephemeral=True)
 
         # Reject huge results
         try:
             if isinstance(result, (int, float)) and (abs(result) > 1e100):
-                return await interaction.response.send_message("❌ Result too large!", ephemeral=True)
+                return await interaction.response.send_message("✗ Result too large!", ephemeral=True)
         except Exception:
-            return await interaction.response.send_message("❌ Calculation error.", ephemeral=True)
+            return await interaction.response.send_message("✗ Calculation error.", ephemeral=True)
 
         # Format the result
         if isinstance(result, float):
@@ -1000,10 +1118,10 @@ class Utility(commands.Cog):
 
         # Limit result length
         if len(result_str) > 100:
-            return await interaction.response.send_message("❌ Result too long!", ephemeral=True)
+            return await interaction.response.send_message("✗ Result too long!", ephemeral=True)
 
         embed = discord.Embed(
-            title="🧮 Calculator",
+            title="Calculator",
             color=discord.Color.blue()
         )
         embed.add_field(name="Expression", value=f"```{expression}```", inline=False)
@@ -1017,7 +1135,7 @@ class Utility(commands.Cog):
     async def say(self, interaction: discord.Interaction, message: str):
         """Make the bot say something"""
         if not interaction.user.guild_permissions.manage_messages:
-            return await interaction.response.send_message("❌ You need Manage Messages permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Manage Messages permission!", ephemeral=True)
         # Delete the original command message for clean output
         try:
             await interaction.response.defer()
@@ -1038,7 +1156,7 @@ class Utility(commands.Cog):
     async def create_embed(self, interaction: discord.Interaction, title: str, description: str = None, color: str = None, footer: str = None):
         """Create a custom embed"""
         if not interaction.user.guild_permissions.manage_messages:
-            return await interaction.response.send_message("❌ You need Manage Messages permission!", ephemeral=True)
+            return await interaction.response.send_message("✗ You need Manage Messages permission!", ephemeral=True)
         # Parse color
         embed_color = discord.Color.blue()  # Default
 
@@ -1068,19 +1186,53 @@ class Utility(commands.Cog):
                 }
                 embed_color = color_map.get(color.lower(), embed_color)
 
+        # Sanitize text fields
+        title = (title or '').strip()
+        if not title:
+            return await interaction.response.send_message(
+                "✗ Title can't be empty!", ephemeral=True
+            )
+
+        # Discord enforces ~6000 total characters across title + description +
+        # footer, on top of the per-field limits. Compute the description budget.
+        title = title[:256]  # Discord title limit
+        overhead = len(title)
+        if footer:
+            footer = footer[:2048]  # Discord footer limit
+            overhead += len(footer)
+
+        max_desc = min(4096, 6000 - overhead)  # description field + total limits
+        if max_desc < 1:
+            return await interaction.response.send_message(
+                "✗ Title and footer together are too long — shorten at least one of them!",
+                ephemeral=True
+            )
+        if description and len(description) > max_desc:
+            description = description[:max_desc]
+
         embed = discord.Embed(
-            title=title[:256],  # Discord title limit
-            description=description[:4096] if description else None,  # Discord description limit
+            title=title,
+            description=description,
             color=embed_color,
             timestamp=interaction.created_at
         )
 
         if footer:
-            embed.set_footer(text=footer[:2048])  # Discord footer limit
+            embed.set_footer(text=footer)
 
         embed.set_author(name=interaction.user.display_name, icon_url=interaction.user.display_avatar.url)
 
-        await interaction.response.send_message(embed=embed)
+        try:
+            await interaction.response.send_message(embed=embed)
+        except discord.HTTPException:
+            # Rare leftover failures (e.g. malformed payload); reply once, quietly
+            try:
+                await interaction.followup.send(
+                    "✗ Embed couldn't be posted (probably too large) — shorten the text and try again.",
+                    ephemeral=True
+                )
+            except discord.HTTPException:
+                pass
 
     async def help_command_autocomplete(self, interaction: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
         """Autocomplete command names for /help."""

@@ -78,8 +78,8 @@ if __name__ == '__main__':
     print("Running basic tests...")
 
     # Test config
-    print("✓ Config defaults loaded")
+    print("✔ Config defaults loaded")
     print(f"  Bot prefix: {config.BOT_PREFIX}")
     print(f"  Log level: {config.LOG_LEVEL}")
 
-    print("✓ All basic tests passed!")
+    print("✔ All basic tests passed!")

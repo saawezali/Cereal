@@ -1,8 +1,8 @@
-# 🥣 Cereal Bot - Developer Documentation
+# Cereal Bot - Developer Documentation
 
 Welcome to the Cereal Bot development team! This document contains everything you need to know to contribute effectively.
 
-## 📋 Table of Contents
+## Table of Contents
 
 1. [Getting Started](#getting-started)
 2. [Project Structure](#project-structure)
@@ -18,7 +18,7 @@ Welcome to the Cereal Bot development team! This document contains everything yo
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -69,7 +69,7 @@ python bot.py
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 Cereal/
@@ -123,7 +123,7 @@ Cereal/
 
 ---
 
-## 🏗️ Code Architecture
+## Code Architecture
 
 ### Bot Structure
 
@@ -179,7 +179,7 @@ async def setup(bot):
 
 ---
 
-## ➕ Adding New Features
+## Adding New Features
 
 ### Creating a New Command
 
@@ -200,7 +200,7 @@ async def hello(self, ctx, name: str = None):
     target = name or ctx.author.display_name
     
     embed = discord.Embed(
-        title="👋 Hello!",
+        title="Hello!",
         description=f"Hello, {target}!",
         color=discord.Color.blue()
     )
@@ -214,11 +214,11 @@ async def hello(self, ctx, name: str = None):
 @hello.error
 async def hello_error(self, ctx, error):
     if isinstance(error, commands.CommandOnCooldown):
-        await ctx.send(f"⏰ Slow down! Try again in {error.retry_after:.1f}s")
+        await ctx.send(f"Slow down! Try again in {error.retry_after:.1f}s")
     elif isinstance(error, commands.MissingRequiredArgument):
-        await ctx.send("❌ Missing required argument!")
+        await ctx.send("✗ Missing required argument!")
     else:
-        await ctx.send(f"❌ Error: {error}")
+        await ctx.send(f"✗ Error: {error}")
 ```
 
 ### Creating a New Cog
@@ -245,7 +245,7 @@ class Economy(commands.Cog):
         balance = 1000
         
         embed = discord.Embed(
-            title=f"💰 {member.display_name}'s Balance",
+            title=f"{member.display_name}'s Balance",
             description=f"**{balance:,}** {self.currency_name}",
             color=discord.Color.gold()
         )
@@ -258,7 +258,7 @@ class Economy(commands.Cog):
         reward = 100
         # TODO: Add to database
         
-        await ctx.send(f"✅ You claimed **{reward}** {self.currency_name}!")
+        await ctx.send(f"✔ You claimed **{reward}** {self.currency_name}!")
 
 async def setup(bot):
     await bot.add_cog(Economy(bot))
@@ -275,7 +275,7 @@ async def on_member_join(self, member):
     channel = member.guild.system_channel
     if channel:
         embed = discord.Embed(
-            title="👋 Welcome!",
+            title="Welcome!",
             description=f"Welcome to {member.guild.name}, {member.mention}!",
             color=discord.Color.green()
         )
@@ -317,7 +317,7 @@ class TaskExample(commands.Cog):
 
 ---
 
-## 📝 Coding Standards
+## Coding Standards
 
 ### Python Style Guide
 
@@ -383,7 +383,7 @@ def complex_function(param1: str, param2: int = 5) -> bool:
 
 **1. Always use embeds for rich content:**
 ```python
-# Good ✅
+# Good
 embed = discord.Embed(
     title="Title",
     description="Description",
@@ -392,24 +392,24 @@ embed = discord.Embed(
 embed.add_field(name="Field", value="Value")
 await ctx.send(embed=embed)
 
-# Avoid ❌
+# Avoid
 await ctx.send("**Title**\nDescription\nField: Value")
 ```
 
 **2. Use proper error handling:**
 ```python
-# Good ✅
+# Good
 @commands.command()
 async def safe_command(self, ctx):
     try:
         # Command logic
         result = risky_operation()
-        await ctx.send(f"✅ Success: {result}")
+        await ctx.send(f"✔ Success: {result}")
     except Exception as e:
-        await ctx.send(f"❌ Error: {e}")
+        await ctx.send(f"✗ Error: {e}")
         print(f"Error in safe_command: {e}")
 
-# Avoid ❌
+# Avoid
 @commands.command()
 async def unsafe_command(self, ctx):
     result = risky_operation()  # Could crash bot
@@ -418,11 +418,11 @@ async def unsafe_command(self, ctx):
 
 **3. Use type hints:**
 ```python
-# Good ✅
+# Good
 async def kick_user(self, ctx: commands.Context, member: discord.Member, reason: str = None) -> None:
     await member.kick(reason=reason)
 
-# Avoid ❌
+# Avoid
 async def kick_user(self, ctx, member, reason=None):
     await member.kick(reason=reason)
 ```
@@ -458,7 +458,7 @@ COLORS = {
 
 # Use emojis for visual appeal
 embed = discord.Embed(
-    title="✅ Success",
+    title="✔ Success",
     description="Operation completed successfully",
     color=COLORS['success']
 )
@@ -472,19 +472,19 @@ embed.set_footer(text=f"Requested by {ctx.author.name}", icon_url=ctx.author.dis
 
 ---
 
-## 🧪 Testing Guidelines
+## Testing Guidelines
 
 ### Manual Testing Checklist
 
 Before submitting a PR, test:
 
-- ✅ Command works with valid inputs
-- ✅ Command handles invalid inputs gracefully
-- ✅ Permissions are checked correctly
-- ✅ Error messages are user-friendly
-- ✅ Embeds display properly on mobile and desktop
-- ✅ Command doesn't break other features
-- ✅ Performance is acceptable (no long delays)
+- ✔ Command works with valid inputs
+- ✔ Command handles invalid inputs gracefully
+- ✔ Permissions are checked correctly
+- ✔ Error messages are user-friendly
+- ✔ Embeds display properly on mobile and desktop
+- ✔ Command doesn't break other features
+- ✔ Performance is acceptable (no long delays)
 
 ### Writing Unit Tests
 
@@ -521,7 +521,7 @@ Create a separate test bot token for development:
 
 ---
 
-## 🔀 Git Workflow
+## Git Workflow
 
 ### Branch Strategy
 
@@ -628,7 +628,7 @@ Reviewers should check:
 
 ---
 
-## 🔌 API Reference
+## API Reference
 
 ### Discord.py Quick Reference
 
@@ -661,10 +661,14 @@ await ctx.send("Hello!")
 embed = discord.Embed(title="Title", description="Desc")
 await ctx.send(embed=embed)
 
-# With reactions
-msg = await ctx.send("React to this!")
-await msg.add_reaction('👍')
+# With buttons (interactive components)
+class MyView(discord.ui.View):
+    @discord.ui.button(label="Click me", style=discord.ButtonStyle.primary)
+    async def click(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.send_message("Clicked!", ephemeral=True)
 
+view = MyView()
+await ctx.send("Button below!", view=view)
 # DM user
 await ctx.author.send("Private message")
 
@@ -738,7 +742,7 @@ async with session.get('https://uselessfacts.jsph.pl/random.json?language=en') a
 
 ---
 
-## 🚀 Deployment
+## Deployment
 
 ### Local Development
 
@@ -864,7 +868,7 @@ DATABASE_URL=postgresql://user:pass@host:5432/db
 
 ---
 
-## 🐛 Troubleshooting
+## Troubleshooting
 
 ### Common Issues
 
@@ -951,7 +955,7 @@ logging.getLogger('discord.http').setLevel(logging.WARNING)
 
 ---
 
-## 📚 Useful Resources
+## Useful Resources
 
 ### Documentation
 - **Discord.py**: https://discordpy.readthedocs.io/
@@ -974,7 +978,7 @@ logging.getLogger('discord.http').setLevel(logging.WARNING)
 
 ---
 
-## 🎯 Roadmap
+## Roadmap
 
 ### High Priority
 - [ ] Database integration (PostgreSQL/SQLite)
@@ -998,20 +1002,20 @@ logging.getLogger('discord.http').setLevel(logging.WARNING)
 
 ---
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License - see LICENSE file for details.
 
 ---
 
-## 🙏 Acknowledgments
+## Acknowledgments
 
 - Discord.py community
 - All contributors
-- Coffee ☕
+- Coffee 
 
 ---
 
 **Questions?** Open an issue or contact the maintainers!
 
-**Happy coding! 🥣**
+**Happy coding!**

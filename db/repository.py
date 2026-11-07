@@ -8,7 +8,7 @@ from sqlalchemy import select, update, delete, func, and_, or_
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from .base import db
-from .models import User, Guild, GuildMember, Warning, CustomCommand, Giveaway
+from .models import User, Guild, GuildMember, Warning, CustomCommand, Giveaway, AutomemeConfig
 from core import get_logger
 
 logger = get_logger(__name__)
@@ -292,6 +292,41 @@ class GiveawayRepository(BaseRepository[Giveaway]):
         return await self.get_by_id(giveaway_id)
 
 
+class AutomemeRepository(BaseRepository[AutomemeConfig]):
+    """Repository for AutomemeConfig entities"""
+
+    def __init__(self):
+        super().__init__(AutomemeConfig)
+
+    async def get_config(self, guild_id: int) -> Optional[AutomemeConfig]:
+        """Get the auto-meme config for a guild (PK is guild_id)"""
+        return await db.get(AutomemeConfig, guild_id=guild_id)
+
+    async def get_enabled_all(self) -> List[AutomemeConfig]:
+        """All enabled auto-meme configs (loaded once into the scheduler cache)"""
+        return await self.get_all(enabled=True)
+
+    async def upsert_config(self, guild_id: int, channel_id: int, interval_minutes: int) -> Optional[AutomemeConfig]:
+        """Create or update (and re-enable) the config for a guild"""
+        existing = await self.get_config(guild_id)
+        if existing:
+            await self.update(
+                {'guild_id': guild_id},
+                channel_id=channel_id,
+                interval_minutes=interval_minutes,
+                enabled=True,
+                consecutive_failures=0,
+                failure_notified=False,
+            )
+        else:
+            await self.create(
+                guild_id=guild_id,
+                channel_id=channel_id,
+                interval_minutes=interval_minutes,
+            )
+        return await self.get_config(guild_id)
+
+
 # Global repository instances
 user_repo = UserRepository()
 guild_repo = GuildRepository()
@@ -299,6 +334,7 @@ guild_member_repo = GuildMemberRepository()
 warning_repo = WarningRepository()
 custom_command_repo = CustomCommandRepository()
 giveaway_repo = GiveawayRepository()
+automeme_repo = AutomemeRepository()
 
 
 async def initialize_repositories():
@@ -315,11 +351,13 @@ __all__ = [
     'WarningRepository',
     'CustomCommandRepository',
     'GiveawayRepository',
+    'AutomemeRepository',
     'user_repo',
     'guild_repo',
     'guild_member_repo',
     'warning_repo',
     'custom_command_repo',
     'giveaway_repo',
+    'automeme_repo',
     'initialize_repositories'
 ]

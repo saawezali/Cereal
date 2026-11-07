@@ -35,7 +35,7 @@ class Owner(commands.Cog):
     async def servers_error(self, ctx: commands.Context, error: commands.CommandError):
         """Non-owners get a brief denial instead of silence."""
         if isinstance(error, commands.NotOwner):
-            await ctx.send("❌ Only the bot owner can use this command.", delete_after=10)
+            await ctx.send("✗ Only the bot owner can use this command.", delete_after=10)
         else:
             raise error
 

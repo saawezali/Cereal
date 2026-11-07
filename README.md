@@ -4,39 +4,40 @@
 
 Cereal is a comprehensive Discord bot designed to make your server more engaging and easier to manage. With over 40 commands across moderation, games, entertainment, and utilities, Cereal helps create a better community experience for everyone.
 
-## 🤖 Invite Cereal to Your Server
+## Invite Cereal to Your Server
 
 [![Add to Discord](https://img.shields.io/badge/Add_to_Discord-5865F2?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/api/oauth2/authorize?client_id=1368984903559155833&permissions=1141782&scope=bot%20applications.commands)
 
-## ✨ Features
+## Features
 
-### 🛡️ Moderation Tools
+### Moderation Tools
 Keep your server safe and organized with powerful moderation commands:
 - Member management (kick, ban, mute, warn)
 - Message cleanup and slowmode
 - Automated moderation features
 
-### 🎮 Games & Entertainment
+### Games & Entertainment
 Make your server more fun with interactive games and entertainment:
 - Truth or Dare, Would You Rather, Never Have I Ever
 - Magic 8-ball, Rock Paper Scissors, coin flips, dice rolls
 - Random memes, dad jokes, and fun interactions
 
-### 😂 Fun Commands
+### Fun Commands
 Lighten up your server with fun and social features:
 - Roast and compliment commands
 - User shipping and avatar viewing
 - Inspirational quotes and random facts
 
-### 🔧 Utility Features
+### Utility Features
 Helpful tools for server management and daily use:
 - Reminders and timers
 - Interactive polls and suggestions
 - Timezone conversion and weather information
+- Automated meme posting (`/automeme`, admin-configured)
 - Custom embeds and message formatting
 - Server and user information displays
 
-## 🚀 Getting Started
+## Getting Started
 
 ### For Server Admins:
 1. **Invite the bot** using the link above
@@ -49,16 +50,16 @@ Helpful tools for server management and daily use:
 - Start with fun commands like `/meme` or `/8ball`
 - Explore moderation features if you have permissions
 
-## 📋 Commands Overview
+## Commands Overview
 
 | Category | Commands |
 |----------|----------|
 | **Moderation** | kick, ban, unban, mute, unmute, clear, warn, warnings, clear_warnings, slowmode |
 | **Games** | truthordare, wouldyourather, neverhaveiever, 8ball, rps, flip, roll |
 | **Fun** | meme, dadjoke, fact, quote, joke, nope, roast, compliment, ship, avatar, userinfo, serverinfo |
-| **Utility** | remind, reminders, poll, afk, ping, suggest, timer, calculate, say, embed, timezone, weather, help |
+| **Utility** | remind, reminders, poll, afk, ping, suggest, timer, calculate, say, embed, timezone, weather, automeme, help |
 
-## ⚙️ Setup & Permissions
+## Setup & Permissions
 
 ### Required Permissions:
 - **Send Messages** - To respond to commands
@@ -73,14 +74,14 @@ Helpful tools for server management and daily use:
 - **Manage Channels** - For slowmode
 - **Mention Everyone** - For announcements
 
-## 🔒 Privacy & Terms
+## Privacy & Terms
 
 Cereal respects your privacy and follows Discord's guidelines:
 
 - **[Privacy Policy](https://saawezali.github.io/Cereal/privacy-policy.html)** - How we handle your data
 - **[Terms of Service](https://saawezali.github.io/Cereal/terms-of-service.html)** - Usage rules and guidelines
 
-## 🆘 Support & Help
+## Support & Help
 
 ### Getting Help:
 - Use `/help` command in Discord for a full list of commands
@@ -95,22 +96,22 @@ Cereal respects your privacy and follows Discord's guidelines:
 - **Commands not working?** Try `/ping` to test connectivity
 - **Missing features?** Some commands require specific permissions
 
-## 📊 Bot Statistics
+## Bot Statistics
 
 - **Commands**: 40+ available features
 - **Uptime**: 99%+ reliability
 - **Support**: Active development and maintenance
 
-## 🎯 Why Choose Cereal?
+## Why Choose Cereal?
 
-- ✅ **Free to use** - No premium features or paywalls
-- ✅ **Regular updates** - New features added frequently
-- ✅ **Community focused** - Built for Discord communities
-- ✅ **Easy setup** - Simple invite and configuration
-- ✅ **Privacy conscious** - Transparent data practices
-- ✅ **Active support** - Help when you need it
+- ✔ **Free to use** - No premium features or paywalls
+- ✔ **Regular updates** - New features added frequently
+- ✔ **Community focused** - Built for Discord communities
+- ✔ **Easy setup** - Simple invite and configuration
+- ✔ **Privacy conscious** - Transparent data practices
+- ✔ **Active support** - Help when you need it
 
-## 🚀 Future Features
+## Future Features
 
 We're constantly working on new features! Upcoming additions may include:
 - Advanced moderation automation
@@ -121,9 +122,9 @@ We're constantly working on new features! Upcoming additions may include:
 
 ---
 
-**Made with ❤️ for the Discord community**
+Made with love for the Discord community
 
-## 🛠️ For Developers
+## For Developers
 
 ### Prerequisites
 - Python 3.10 or higher (CI tests 3.10–3.13)
@@ -184,14 +185,14 @@ Cereal/
 └── docs/                 # Documentation
 ```
 
-### 🤝 Contributing
+### Contributing
 We welcome contributions! Please see our [Contributing Guide](CONTRIBUTING.md) for detailed information on:
 - Development setup
 - Code standards
 - Testing guidelines
 - Pull request process
 
-### 📋 Development Features
+### Development Features
 - **Slash Commands**: Modern Discord command system
 - **Database Integration**: SQLite with SQLAlchemy ORM
 - **Health Monitoring**: Built-in health check endpoints
@@ -210,7 +211,7 @@ The project includes GitHub Actions for automated testing:
 - **Code Quality**: Flake8 linting
 - **Automated Deployment**: Ready for production deployment
 
-## 🔒 Security Features
+## Security Features
 
 - **Input Validation**: All user inputs are validated and sanitized
 - **Rate Limiting**: Built-in cooldowns prevent spam
@@ -239,24 +240,24 @@ The project includes GitHub Actions for automated testing:
 - [ ] Advanced logging system
 - [ ] Translation command
 
-## 🤝 Contributing
+## Contributing
 
 Contributions are welcome! Feel free to:
 - Report bugs
 - Suggest features
 - Submit pull requests
 
-## � Legal & Policies
+## Legal & Policies
 
 - **[Privacy Policy](PRIVACY_POLICY.md)** - How we handle your data
 - **[Terms of Service](TERMS_OF_SERVICE.md)** - Usage rules and guidelines
 - **[License](LICENSE)** - MIT License terms
 
-## �📜 License
+## License
 
 This project is licensed under the MIT License.
 
-## 🙏 Credits
+## Credits
 
 - Built with [discord.py](https://github.com/Rapptz/discord.py)
 - Memes from Reddit API
@@ -266,7 +267,7 @@ This project is licensed under the MIT License.
 - Evil insults from [evilinsult.com](https://evilinsult.com/)
 - Timezone data from [pytz](https://pythonhosted.org/pytz/)
 
-## 📧 Support
+## Support
 
 For issues or questions, please:
 - Open an issue on GitHub
@@ -274,4 +275,4 @@ For issues or questions, please:
 
 ---
 
-Made with ❤️ by Saawez Ali
+Made with love by Saawez Ali

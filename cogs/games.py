@@ -56,7 +56,7 @@ class Games(commands.Cog):
     async def truth_or_dare(self, interaction: discord.Interaction):
         """Play Truth or Dare"""
         embed = discord.Embed(
-            title="🎲 Truth or Dare",
+            title="Truth or Dare",
             description="Choose Truth or Dare!",
             color=discord.Color.purple()
         )
@@ -70,7 +70,7 @@ class Games(commands.Cog):
         question = random.choice(self.wyr_questions)
         
         embed = discord.Embed(
-            title="🤔 Would You Rather",
+            title="Would You Rather",
             description=question,
             color=discord.Color.gold()
         )
@@ -84,7 +84,7 @@ class Games(commands.Cog):
         statement = random.choice(self.nhie_statements)
         
         embed = discord.Embed(
-            title="🙈 Never Have I Ever",
+            title="Never Have I Ever",
             description=statement,
             color=discord.Color.green()
         )
@@ -107,7 +107,7 @@ class Games(commands.Cog):
         ]
         
         embed = discord.Embed(
-            title="🎱 Magic 8-Ball",
+            title="Magic 8-Ball",
             color=discord.Color.blue()
         )
         embed.add_field(name="Question", value=question, inline=False)
@@ -129,18 +129,18 @@ class Games(commands.Cog):
         
         # Determine winner
         if choice == bot_choice:
-            result = "🤝 It's a tie!"
+            result = "It's a tie!"
             color = discord.Color.gold()
         elif (choice == 'rock' and bot_choice == 'scissors') or \
              (choice == 'paper' and bot_choice == 'rock') or \
              (choice == 'scissors' and bot_choice == 'paper'):
-            result = "🎉 You win!"
+            result = "You win!"
             color = discord.Color.green()
         else:
-            result = "😔 You lose!"
+            result = "You lose!"
             color = discord.Color.red()
         
-        embed = discord.Embed(title="✊ Rock Paper Scissors", color=color)
+        embed = discord.Embed(title="Rock Paper Scissors", color=color)
         embed.add_field(name="Your choice", value=choice.capitalize(), inline=True)
         embed.add_field(name="My choice", value=bot_choice.capitalize(), inline=True)
         embed.add_field(name="Result", value=result, inline=False)
@@ -152,7 +152,7 @@ class Games(commands.Cog):
         """Flip a coin"""
         result = random.choice(['Heads', 'Tails'])
         embed = discord.Embed(
-            title="🪙 Coin Flip",
+            title="Coin Flip",
             description=f"The coin landed on **{result}**!",
             color=discord.Color.gold()
         )
@@ -165,18 +165,18 @@ class Games(commands.Cog):
         try:
             rolls, sides = map(int, dice.split('d'))
             if rolls > 25 or sides > 100:
-                return await interaction.response.send_message("❌ Too many dice or sides! Max: 25d100", ephemeral=True)
+                return await interaction.response.send_message("✗ Too many dice or sides! Max: 25d100", ephemeral=True)
             
             results = [random.randint(1, sides) for _ in range(rolls)]
             total = sum(results)
             
-            embed = discord.Embed(title="🎲 Dice Roll", color=discord.Color.blue())
+            embed = discord.Embed(title="Dice Roll", color=discord.Color.blue())
             embed.add_field(name="Rolls", value=', '.join(map(str, results)), inline=False)
             embed.add_field(name="Total", value=str(total), inline=False)
             
             await interaction.response.send_message(embed=embed)
         except Exception:
-            await interaction.response.send_message("❌ Invalid format! Use NdN (e.g., 2d6)", ephemeral=True)
+            await interaction.response.send_message("✗ Invalid format! Use NdN (e.g., 2d6)", ephemeral=True)
 class TruthOrDareView(discord.ui.View):
     def __init__(self, bot, user, truths, dares):
         super().__init__(timeout=30.0)
@@ -185,14 +185,14 @@ class TruthOrDareView(discord.ui.View):
         self.truths = truths
         self.dares = dares
     
-    @discord.ui.button(label="Truth", style=discord.ButtonStyle.primary, emoji="💬")
+    @discord.ui.button(label="Truth", style=discord.ButtonStyle.primary)
     async def truth_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user != self.user:
             return await interaction.response.send_message("This isn't your game!", ephemeral=True)
         
         result = random.choice(self.truths)
         embed = discord.Embed(
-            title="💬 Truth",
+            title="Truth",
             description=result,
             color=discord.Color.blue()
         )
@@ -200,14 +200,14 @@ class TruthOrDareView(discord.ui.View):
         await interaction.response.send_message(embed=embed)
         self.stop()
     
-    @discord.ui.button(label="Dare", style=discord.ButtonStyle.danger, emoji="🎯")
+    @discord.ui.button(label="Dare", style=discord.ButtonStyle.danger)
     async def dare_button(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user != self.user:
             return await interaction.response.send_message("This isn't your game!", ephemeral=True)
         
         result = random.choice(self.dares)
         embed = discord.Embed(
-            title="🎯 Dare",
+            title="Dare",
             description=result,
             color=discord.Color.red()
         )

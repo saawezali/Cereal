@@ -23,11 +23,11 @@ async def run_migration():
         results = await migrate_sqlite_to_postgres(sqlite_path, postgres_url)
 
         if results['success']:
-            logger.info("✅ Example migration completed successfully!")
+            logger.info("✔ Example migration completed successfully!")
             logger.info(f"Duration: {results['duration']:.2f} seconds")
             logger.info(f"Migrated tables: {results['migrated_tables']}")
         else:
-            logger.error("❌ Example migration failed!")
+            logger.error("✗ Example migration failed!")
             for error in results['errors']:
                 logger.error(f"  - {error}")
 

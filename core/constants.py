@@ -25,44 +25,15 @@ class Colors:
     GAMES = discord.Color.gold()
     UTILITY = discord.Color.teal()
 
-# Emojis
+# Symbols
 class Emojis:
-    """Common emojis used throughout the bot"""
-    SUCCESS = "✅"
-    ERROR = "❌"
-    WARNING = "⚠️"
-    INFO = "ℹ️"
-    LOADING = "⏳"
-    CHECK = "✔️"
-    CROSS = "✖️"
-
-    # Fun emojis
-    CERAL = ""
-    PARTY = "🎉"
-    STAR = "⭐"
-    FIRE = "🔥"
-    COOL = "😎"
-    THINK = "🤔"
-
-    # Status emojis
-    ONLINE = "🟢"
-    IDLE = "🟡"
-    DND = "🔴"
-    OFFLINE = "⚫"
-
-    # Moderation
-    BAN = "🔨"
-    KICK = "👢"
-    MUTE = "🔇"
-    WARN = "⚠️"
-    LOCK = "🔒"
-    UNLOCK = "🔓"
-
-    # Games
-    DICE = "🎲"
-    CARD = "🃏"
-    TROPHY = "🏆"
-    MEDAL = "🏅"
+    """Common status symbols used throughout the bot (Unicode, not emoji)"""
+    SUCCESS = ""
+    ERROR = ""
+    WARNING = ""
+    INFO = "Info"
+    CHECK = ""
+    CROSS = ""
 
 # Permission Levels
 class Permissions:
@@ -156,23 +127,19 @@ class SuccessMessages:
 COMMAND_CATEGORIES = {
     "moderation": {
         "name": "Moderation",
-        "description": "Server moderation commands",
-        "emoji": Emojis.BAN
+        "description": "Server moderation commands"
     },
     "games": {
         "name": "Games",
-        "description": "Fun games and activities",
-        "emoji": Emojis.DICE
+        "description": "Fun games and activities"
     },
     "fun": {
         "name": "Fun",
-        "description": "Fun and meme commands",
-        "emoji": Emojis.PARTY
+        "description": "Fun and meme commands"
     },
     "utility": {
         "name": "Utility",
-        "description": "Useful utility commands",
-        "emoji": Emojis.INFO
+        "description": "Useful utility commands"
     }
 }
 

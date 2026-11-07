@@ -3,7 +3,7 @@ Database module for Cereal Bot
 """
 
 from .base import db, init_db, close_db, Base, Database
-from .models import User, Guild, GuildMember, Warning, CustomCommand, Giveaway
+from .models import User, Guild, GuildMember, Warning, CustomCommand, Giveaway, AutomemeConfig
 from .repository import (
     BaseRepository,
     UserRepository,
@@ -12,12 +12,14 @@ from .repository import (
     WarningRepository,
     CustomCommandRepository,
     GiveawayRepository,
+    AutomemeRepository,
     user_repo,
     guild_repo,
     guild_member_repo,
     warning_repo,
     custom_command_repo,
     giveaway_repo,
+    automeme_repo,
     initialize_repositories
 )
 
@@ -33,6 +35,7 @@ __all__ = [
     'Warning',
     'CustomCommand',
     'Giveaway',
+    'AutomemeConfig',
     'BaseRepository',
     'UserRepository',
     'GuildRepository',
@@ -40,11 +43,13 @@ __all__ = [
     'WarningRepository',
     'CustomCommandRepository',
     'GiveawayRepository',
+    'AutomemeRepository',
     'user_repo',
     'guild_repo',
     'guild_member_repo',
     'warning_repo',
     'custom_command_repo',
     'giveaway_repo',
+    'automeme_repo',
     'initialize_repositories'
 ]

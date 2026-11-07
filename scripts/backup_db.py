@@ -18,7 +18,7 @@ def create_backup():
     backup_dir.mkdir(exist_ok=True)
 
     if not db_path.exists():
-        print("❌ Database file not found!")
+        print("✗ Database file not found!")
         return False
 
     # Create timestamped backup filename
@@ -29,19 +29,19 @@ def create_backup():
     try:
         # Copy database file
         shutil.copy2(db_path, backup_path)
-        print(f"✅ Database backup created: {backup_path}")
+        print(f"✔ Database backup created: {backup_path}")
 
         # Clean up old backups (keep last 10)
         backups = sorted(backup_dir.glob("cereal_backup_*.db"), reverse=True)
         if len(backups) > 10:
             for old_backup in backups[10:]:
                 old_backup.unlink()
-                print(f"🗑️  Removed old backup: {old_backup.name}")
+                print(f"Removed old backup: {old_backup.name}")
 
         return True
 
     except Exception as e:
-        print(f"❌ Backup failed: {e}")
+        print(f"✗ Backup failed: {e}")
         return False
 
 def list_backups():

@@ -11,6 +11,10 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 from sqlalchemy import select, update, delete, func
 from contextlib import asynccontextmanager
 
+from core import get_logger
+
+logger = get_logger(__name__)
+
 
 class Base(DeclarativeBase):
     """Base class for all database models"""
@@ -57,17 +61,17 @@ class Database:
                 await conn.run_sync(Base.metadata.create_all)
 
             self._initialized = True
-            print("✓ Database initialized successfully")
+            logger.info("✔ Database initialized successfully")
 
         except Exception as e:
-            print(f"✗ Database initialization failed: {e}")
+            logger.error(f"✗ Database initialization failed: {e}")
             raise
 
     async def close(self) -> None:
         """Close database connections"""
         if hasattr(self, 'engine'):
             await self.engine.dispose()
-            print("✓ Database connections closed")
+            logger.info("✔ Database connections closed")
 
     @asynccontextmanager
     async def session(self):

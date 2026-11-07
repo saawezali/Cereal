@@ -129,3 +129,19 @@ class Giveaway(Base):
 
     def __repr__(self):
         return f"<Giveaway(id={self.id}, title='{self.title}', active={self.active})>"
+
+
+class AutomemeConfig(Base):
+    """Auto-meme poster configuration (one per guild)"""
+    __tablename__ = 'automeme_configs'
+
+    guild_id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=False)  # Discord guild ID
+    channel_id: Mapped[int] = mapped_column(BigInteger, nullable=False)  # Channel to post in
+    interval_minutes: Mapped[int] = mapped_column(Integer, default=15)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    last_sent_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    consecutive_failures: Mapped[int] = mapped_column(Integer, default=0)
+    failure_notified: Mapped[bool] = mapped_column(Boolean, default=False)  # one notify per outage episode
+
+    def __repr__(self):
+        return f"<AutomemeConfig(guild_id={self.guild_id}, channel_id={self.channel_id}, interval={self.interval_minutes})>"
